@@ -7,7 +7,7 @@ BlockView::BlockView(void)
  		  B_WILL_DRAW)
 {
 	SetViewColor(0, 0, 100);
-	testImg = BTranslationUtils::GetBitmap("test.bmp");
+	//testImg = BTranslationUtils::GetBitmap("test.bmp");
 	Invalidate();
 }
 
@@ -20,7 +20,7 @@ void BlockView::Draw(BRect rect)
 	SetDrawingMode(B_OP_ALPHA);
 	SetHighColor(255,255,255);
 	FillRect(Bounds());
-	DrawBitmap(testImg);
+	//DrawBitmap(testImg);
 	SetHighColor(0,0,0);
 	// DEBUG SHOW COORDS
 	/*MovePenTo(BPoint(0,10));

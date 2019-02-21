@@ -10,24 +10,29 @@ tetris_clock(void *params)
 	TetrisTable *table = (TetrisTable *)params;
 	while(1) {
 		table->Tick();
+		// TODO: speed up as the game goes on
 		snooze(1000000);
 	}
 	return 0;
 }
 
 TetrisTable::TetrisTable(void)
- :	BView(BRect(0,0,400,400), "tetristable", B_FOLLOW_ALL, B_WILL_DRAW)
-{
-	Bounds().PrintToStream();
-	Frame().PrintToStream();
-	
+ :	BView(BRect(0,0,WIDTH,HEIGHT), "tetristable", B_FOLLOW_NONE, B_WILL_DRAW)
+{	
+	// TODO: make matrix resizable
+	for(int i = 0; i < rowSize; i++)
+	{
+		for(int j = 0; j < colSize; j++)
+		{
+			bottomMatrix[i][j] = NULL;
+		}
+	}
 	time_thread = spawn_thread(tetris_clock, "tetrisclock", 
 							   B_REAL_TIME_PRIORITY, this);
 	if(time_thread == B_NO_MORE_THREADS) {
 		printf("Error making clock thread\n");
 		// TODO: exit	
 	}
-	
 	NewPiece();
 }
 
@@ -38,6 +43,8 @@ TetrisTable::~TetrisTable(void)
 void 
 TetrisTable::Draw(BRect rect) 
 {
+	SetHighColor(0,0,0);
+	StrokeRect(Bounds());
 }
 
 void
@@ -51,6 +58,7 @@ void
 TetrisTable::Pause()
 {
 	suspend_thread(time_thread);
+	// TODO: make mouse inputs do nothing during pause
 }
 
 // Creates a new piece for the tetris table
@@ -58,7 +66,8 @@ void
 TetrisTable::NewPiece()
 {
 	// TODO: randomization and 'next'
-	this->pc = new TetrisPiece(ZPOLY, *this);
+	// TODO: game levels
+	this->pc = new TetrisPiece(STRAIGHT, *this);
 	this->pc->MoveTo(150,0);
 }
 
@@ -72,14 +81,49 @@ TetrisTable::Tick()
 		if(this->pc != NULL)
 		{
 			// Lower the active piece
-			MoveActive(0,25);
+			MoveActive(0,BLOCK_SIZE);
 		} else {
 			// Create a new piece at the top
 			NewPiece();
 		}
-		// If we can, free a row
-		
+		// If we can, free some rows
+		FreeRows();
 		Window()->UnlockLooper();
+	}
+}
+
+// Find contiguous rows of pieces and frees them from the board
+// Moves the rest of the game board down to fill in the gaps
+void
+TetrisTable::FreeRows()
+{
+	// search through every row, trying to find a full one
+	bool foundFullRow = true;
+	for(int i = 0; i < rowSize; i++)
+	{
+		for(int j = 0; j < colSize; j++)
+		{
+			if(bottomMatrix[i][j] == NULL)
+			{
+				// move to the next row
+				foundFullRow = false;
+				break;
+			}	
+		}
+		if(foundFullRow)
+		{
+			printf("FULL ROW AT %d\n", i);
+			// delete all the blocks there
+			for(int j = 0; j < colSize; j++)
+			{
+				bottomMatrix[i][j]->RemoveSelf();
+				delete bottomMatrix[i][j];
+				bottomMatrix[i][j] = NULL;
+			}
+			// TODO: move all the blocks down to fill in the gap
+			// TODO: scoring system
+		}
+		foundFullRow = true;
 	}
 }
 
@@ -112,8 +156,30 @@ TetrisTable::MoveActive(int bx, int by)
 			// horizontally at all
 			bx = 0;
 		}
+		// check if this piece is moving beyond the screen
+		if(BeyondScreen(bx))
+		{
+			bx = 0;
+		}
 		this->pc->MoveBy(bx,by);
 	}
+}
+
+bool
+TetrisTable::BeyondScreen(int bx)
+{
+	// check if this piece is moving beyond the screen
+	BlockView **blocks = this->pc->GetBlocks();
+	for(int i = 0; i < this->pc->NUM_BLOCKS; i++)
+	{
+		BRect curFrame = blocks[i]->Frame();
+		if(curFrame.left+bx >= WIDTH || curFrame.right+bx < BLOCK_SIZE)
+		{
+			return true;
+			break;	
+		}
+	}
+	return false;
 }
 
 // Collides with the bottom/floor if the current block touches it
@@ -131,7 +197,7 @@ TetrisTable::CheckCollision()
 			CollisionType curCollide = CollidesBottomBlocks(curRect);
 			// make the block stop if it hits the blocks at the bottom
 			// or if it hits the bottom of the game board
-			if(curRect.bottom > Bounds().Height()-25 
+			if(curRect.bottom > Bounds().Height()-BLOCK_SIZE 
 			   || curCollide == STICK)
 			{
 				// make this become apart of the blocks at the
@@ -139,7 +205,11 @@ TetrisTable::CheckCollision()
 				BlockView **newBlocks = this->pc->GetBlocks();
 				for(int j = 0; j < this->pc->NUM_BLOCKS; j++)
 				{
-					this->bottomBlocks.push_back(newBlocks[j]);
+					BRect curFrame = newBlocks[j]->Frame();
+					int row = (int)(curFrame.top/BLOCK_SIZE);
+					int col = (int)(curFrame.left/BLOCK_SIZE);
+					// add to matrix
+					this->bottomMatrix[row][col] = newBlocks[j];
 				}
 				delete this->pc;
 				this->pc = NULL;
@@ -163,37 +233,44 @@ TetrisTable::CollidesBottomBlocks(BRect rect)
 {
 	// return the most dominant term
 	CollisionType ret = NONE;
-	for(int i = 0; i < this->bottomBlocks.size(); i++)
+	for(int i = 0; i < rowSize; i++)
 	{
-		BRect curBottom = bottomBlocks[i]->Frame();
-		bool alignBot = (int)curBottom.bottom == (int)rect.bottom;
-		bool touchL = (int)curBottom.right == (int)rect.left;
-		bool touchR = (int)curBottom.left == (int)rect.right;
-		if((int)curBottom.top == (int)rect.bottom
-		   &&  (int)curBottom.right == (int)rect.right
-		   &&  (int)curBottom.left == (int)rect.left)
+		for(int j = 0; j < colSize; j++) 
 		{
-			return STICK;
-		} else if(touchL && touchR && alignBot)
-		{
-			ret = COLLIDE;
-		} else if(touchL && alignBot)
-		{
-			if(ret == COLLIDER)
+			if(!bottomMatrix[i][j])
 			{
-				ret = COLLIDE;
-			} else if(ret == NONE)
-			{
-				ret = COLLIDEL;
+				continue;
 			}
-		} else if(touchR && alignBot)
-		{
-			if(ret == COLLIDEL)
+			BRect curBottom = bottomMatrix[i][j]->Frame();
+			bool alignBot = (int)curBottom.bottom == (int)rect.bottom;
+			bool touchL = (int)curBottom.right == (int)rect.left;
+			bool touchR = (int)curBottom.left == (int)rect.right;
+			if((int)curBottom.top == (int)rect.bottom
+		   		&&  (int)curBottom.right == (int)rect.right
+		   		&&  (int)curBottom.left == (int)rect.left)
+			{
+				return STICK;
+			} else if(touchL && touchR && alignBot)
 			{
 				ret = COLLIDE;
-			} else if(ret == NONE)
+			} else if(touchL && alignBot)
 			{
-				ret = COLLIDER;
+				if(ret == COLLIDER)
+				{
+					ret = COLLIDE;
+				} else if(ret == NONE)
+				{
+					ret = COLLIDEL;
+				}
+			} else if(touchR && alignBot)
+			{
+				if(ret == COLLIDEL)
+				{
+					ret = COLLIDE;
+				} else if(ret == NONE)
+				{
+					ret = COLLIDER;
+				}
 			}
 		}
 	}
@@ -210,7 +287,7 @@ TetrisTable::RotateActive(PieceRot rot)
 		for(int i = 0; i < this->pc->NUM_BLOCKS; i++)
 		{
 			CollisionType col = CollidesBottomBlocks(blocks[i]->Frame());
-			if(col > NONE)
+			if(col > NONE || BeyondScreen(0))
 			{
 				if(rot == FORWARD)
 				{
@@ -233,13 +310,13 @@ TetrisTable::KeyDown(const char *bytes, int32 numBytes)
 		switch(bytes[0])
 		{
 			case B_DOWN_ARROW:
-				MoveActive(0,25);
+				MoveActive(0,BLOCK_SIZE);
 				break;
 			case B_LEFT_ARROW:
-				MoveActive(-25,0);
+				MoveActive(-BLOCK_SIZE,0);
 				break;
 			case B_RIGHT_ARROW:
-				MoveActive(25,0);
+				MoveActive(BLOCK_SIZE,0);
 				break;
 			case 'z':
 				RotateActive(BACKWARD);

@@ -11,6 +11,13 @@
 #include <InterfaceDefs.h>
 #include <vector>
 
+using namespace std;
+
+const int WIDTH = 400;
+const int HEIGHT = 400;
+const int rowSize = HEIGHT/BLOCK_SIZE;
+const int colSize = WIDTH/BLOCK_SIZE;
+
 class TetrisTable : public BView {
 public:
 			TetrisTable(void);
@@ -29,15 +36,17 @@ private:
 		COLLIDER = 2,
 		COLLIDE = 3
 	};	
-	void					MoveActive(int bx, int by);
-	void					RotateActive(PieceRot rot);
-	void					NewPiece();
-	CollisionType			CollidesBottomBlocks(BRect rect);
-	CollisionType			CheckCollision();
-	BView					*block;
-	thread_id				time_thread;
-	TetrisPiece				*pc;
-	std::vector<BlockView*>	bottomBlocks;
+	void						MoveActive(int bx, int by);
+	void						RotateActive(PieceRot rot);
+	void						NewPiece();
+	void						FreeRows();
+	bool						BeyondScreen(int bx);
+	CollisionType				CollidesBottomBlocks(BRect rect);
+	CollisionType				CheckCollision();
+	BView						*block;
+	thread_id					time_thread;
+	TetrisPiece					*pc;
+	BlockView					*bottomMatrix[rowSize][colSize];
 };
 
 

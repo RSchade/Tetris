@@ -15,6 +15,8 @@ MainWindow::MainWindow(void)
 	AddChild(table);
 	table->MakeFocus(true);
 	
+	// TODO: Make UI with new game, pause game, etc...
+	// TODO: High score system
 	// simulate clicking new game
 	PostMessage(new BMessage(M_NEW_GAME));
 }

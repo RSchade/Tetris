@@ -24,6 +24,8 @@ enum PieceRot
 	BACKWARD = 1
 };
 
+const int BLOCK_SIZE = 25;
+
 class TetrisPiece {
 public:
 				TetrisPiece(PieceType typ, BView &parent);
@@ -38,7 +40,6 @@ private:
 	PieceType	type;
 	BlockView*	blocks[4];
 	BPoint*		center;
-	const int	BLOCK_SIZE = 25;
 };
 
 
