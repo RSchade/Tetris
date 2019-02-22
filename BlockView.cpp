@@ -7,6 +7,7 @@ BlockView::BlockView(void)
  		  B_WILL_DRAW)
 {
 	SetViewColor(0, 0, 100);
+	// TODO: make the pieces look good, allow colors to be changed as well
 	//testImg = BTranslationUtils::GetBitmap("test.bmp");
 	Invalidate();
 }
@@ -18,7 +19,7 @@ BlockView::~BlockView(void)
 void BlockView::Draw(BRect rect) 
 {
 	SetDrawingMode(B_OP_ALPHA);
-	SetHighColor(255,255,255);
+	SetHighColor(176,141,186);
 	FillRect(Bounds());
 	//DrawBitmap(testImg);
 	SetHighColor(0,0,0);

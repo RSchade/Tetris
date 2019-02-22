@@ -29,7 +29,7 @@ private:
 	enum CollisionType
 	{
 		NONE = 0,
-		STICK = 4,
+		STICK = 8,
 		COLLIDEL = 1,
 		COLLIDER = 2,
 		COLLIDE = 3
@@ -46,6 +46,7 @@ private:
 	TetrisPiece					*pc;
 	BlockView					*bottomMatrix[rowSize][colSize];
 	std::queue<TetrisPiece*>	nextBlocks;
+	bigtime_t					shiftTime;
 };
 
 

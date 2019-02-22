@@ -30,6 +30,7 @@ TetrisTable::TetrisTable(void)
 			bottomMatrix[i][j] = NULL;
 		}
 	}
+	this->shiftTime = -1;
 	time_thread = spawn_thread(tetris_clock, "tetrisclock", 
 							   B_REAL_TIME_PRIORITY, this);
 	if(time_thread == B_NO_MORE_THREADS) {
@@ -92,6 +93,7 @@ TetrisTable::NewPiece()
 	// TODO: add 'next' on screen
 	// TODO: game levels
 	// pop the next piece off the queue and put it in the right place
+	this->shiftTime = -1;
 	this->pc = this->nextBlocks.front();
 	this->pc->AddToView(*this);
 	this->pc->MoveTo(150,25);
@@ -124,10 +126,6 @@ TetrisTable::Tick()
 void
 TetrisTable::FreeRows()
 {
-	// TODO: Issues with freeing rows, sometimes whole rows aren't freed
-	// and other times rows are freed when they aren't supposed to be
-	// pieces drop too much sometimes after they free a row
-	
 	// keep track of which rows we are deleting
 	std::vector<int> delRows(0);
 	bool full = true;
@@ -193,27 +191,32 @@ TetrisTable::MoveActive(int bx, int by)
 	CollisionType col = CheckCollision();
 	if(this->pc != NULL) 
 	{
-		if(col == COLLIDEL)
+		if((col & COLLIDEL) == COLLIDEL)
 		{
-			// collided, at least don't allow the piece to move 
-			// horizontally into this area
 			if(bx < 0)
 			{
 				bx = 0;
 			}
-		} else if(col == COLLIDER)
+		} 
+		if((col & COLLIDER) == COLLIDER)
 		{
 			if(bx > 0)
 			{
 				bx = 0;
 			}	
-		} else if(col == COLLIDE)
+		} 
+		if((col & COLLIDE) == COLLIDE)
 		{
 			// collided on both sides, don't allow it to move 
 			// horizontally at all
 			bx = 0;
+		} 
+		if((col & STICK) == STICK)
+		{
+			// means we are gliding, don't let it move down at all
+			by = 0;	
 		}
-		// check if this piece is moving beyond the screen
+		// check if this piece is moving beyond the screen, if so can't move sideways
 		if(BeyondScreen(bx))
 		{
 			bx = 0;
@@ -243,101 +246,77 @@ TetrisTable::BeyondScreen(int bx)
 // makes the current block become apart of the floor
 TetrisTable::CollisionType
 TetrisTable::CheckCollision()
-{
-	// TODO: Still issue with some collisions
-	// TODO: do neighbor collision model instead
-	
-	CollisionType ret = NONE;
+{	
+	int ret = 0;
 	if(this->pc != NULL)
 	{
 		BRect *rects = this->pc->GetPos();
 		for(int i = 0; i < this->pc->NUM_BLOCKS; i++)
 		{
 			BRect curRect = rects[i];
-			CollisionType curCollide = CollidesBottomBlocks(curRect);
+			int curCollide = CollidesBottomBlocks(curRect);
 			// make the block stop if it hits the blocks at the bottom
 			// or if it hits the bottom of the game board
 			if(curRect.bottom > Bounds().Height()-BLOCK_SIZE 
-			   || curCollide == STICK)
+			   || (curCollide & STICK) == STICK)
 			{
-				// TODO: before something sticks, allow it to move a little bit
+				ret |= STICK;
+				// before something sticks, allow it to move a little bit
 				// but still have it collide
-				
-				// make this become apart of the blocks at the
-				// bottom of the screen
-				BlockView **newBlocks = this->pc->GetBlocks();
-				for(int j = 0; j < this->pc->NUM_BLOCKS; j++)
+				// set the shiftTime to start now
+				if(shiftTime == -1)
 				{
-					BRect curFrame = newBlocks[j]->Frame();
-					int row = (int)(curFrame.top/BLOCK_SIZE);
-					int col = (int)(curFrame.left/BLOCK_SIZE);
-					// add to matrix
-					this->bottomMatrix[row][col] = newBlocks[j];
+					shiftTime = real_time_clock_usecs();	
 				}
-				delete this->pc;
-				this->pc = NULL;
-				return STICK;
+				
+				if(real_time_clock_usecs() - shiftTime >= 100000)
+				{
+					// make this become apart of the blocks at the
+					// bottom of the screen
+					BlockView **newBlocks = this->pc->GetBlocks();
+					for(int j = 0; j < this->pc->NUM_BLOCKS; j++)
+					{
+						BRect curFrame = newBlocks[j]->Frame();
+						int row = (int)(curFrame.top/BLOCK_SIZE);
+						int col = (int)(curFrame.left/BLOCK_SIZE);
+						// add to matrix
+						this->bottomMatrix[row][col] = newBlocks[j];
+					}
+					delete this->pc;
+					this->pc = NULL;
+					shiftTime = -1;
+					return STICK;
+				}
 			}
-			if(ret == COLLIDE || (ret == COLLIDEL && curCollide == COLLIDER)
-			                  || (ret == COLLIDER && curCollide == COLLIDEL))
-			{
-				return COLLIDE;
-			} else if(ret == NONE)
-			{
-				ret = curCollide;
-			}
+			// return the most dominant term among all the blocks in the tetris piece
+			ret |= curCollide;
 		}
 	}
-	return ret;
+	return (CollisionType)ret;
 }
 
 TetrisTable::CollisionType 
 TetrisTable::CollidesBottomBlocks(BRect rect)
 {
-	// return the most dominant term
-	CollisionType ret = NONE;
-	for(int i = 0; i < rowSize; i++)
+	int row = (int)(rect.top/BLOCK_SIZE);
+	int col = (int)(rect.left/BLOCK_SIZE);
+	int ret = 0;	
+	// bottom (STICK)
+	if(row+1 < rowSize && this->bottomMatrix[row+1][col] != NULL)
 	{
-		for(int j = 0; j < colSize; j++) 
-		{
-			if(!bottomMatrix[i][j])
-			{
-				continue;
-			}
-			BRect curBottom = bottomMatrix[i][j]->Frame();
-			bool alignBot = (int)curBottom.bottom == (int)rect.bottom;
-			bool touchL = (int)curBottom.right == (int)rect.left;
-			bool touchR = (int)curBottom.left == (int)rect.right;
-			if((int)curBottom.top == (int)rect.bottom
-		   		&&  (int)curBottom.right == (int)rect.right
-		   		&&  (int)curBottom.left == (int)rect.left)
-			{
-				return STICK;
-			} else if(touchL && touchR && alignBot)
-			{
-				ret = COLLIDE;
-			} else if(touchL && alignBot)
-			{
-				if(ret == COLLIDER)
-				{
-					ret = COLLIDE;
-				} else if(ret == NONE)
-				{
-					ret = COLLIDEL;
-				}
-			} else if(touchR && alignBot)
-			{
-				if(ret == COLLIDEL)
-				{
-					ret = COLLIDE;
-				} else if(ret == NONE)
-				{
-					ret = COLLIDER;
-				}
-			}
-		}
+		ret |= STICK;
 	}
-	return ret;
+	// COLLIDER
+	if(col+1 < colSize && this->bottomMatrix[row][col+1] != NULL)
+	{
+		ret |= COLLIDER;	
+	}
+	// COLLIDEL
+	if(col-1 >= 0 && this->bottomMatrix[row][col-1] != NULL)
+	{
+		ret |= COLLIDEL;
+	}
+	return (CollisionType)ret;
 }
 
 void
