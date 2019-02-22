@@ -3,6 +3,9 @@
 
 #include <OS.h>
 #include <Window.h>
+#include <vector>
+#include <File.h>
+#include <Directory.h>
 
 int32
 tetris_clock(void *params)
@@ -65,10 +68,34 @@ TetrisTable::Pause()
 void
 TetrisTable::NewPiece()
 {
-	// TODO: randomization and 'next'
+	// if there are less than 10 blocks queued up, add more
+	const int toQueue = 10;
+	if(this->nextBlocks.size() < toQueue/2)
+	{
+		BFile random(new BDirectory("/dev"), "urandom", B_READ_ONLY);
+		if(random.InitCheck() != B_OK)
+		{
+			printf("error with getting random numbers\n");
+			// TODO: quit
+		}
+		// gather 10 random bytes
+		unsigned char *bytes = new unsigned char[toQueue];
+		random.Read(bytes, toQueue);
+		for(int i = 0; i < toQueue; i++)
+		{
+			// 7 types of pieces
+			int randPiece = (int)(bytes[i] % 7);
+			// this->nextBlocks.push(new TetrisPiece((PieceType)randPiece));
+			this->nextBlocks.push(new TetrisPiece((PieceType)randPiece));
+		}	
+	}
+	// TODO: add 'next' on screen
 	// TODO: game levels
-	this->pc = new TetrisPiece(STRAIGHT, *this);
-	this->pc->MoveTo(150,0);
+	// pop the next piece off the queue and put it in the right place
+	this->pc = this->nextBlocks.front();
+	this->pc->AddToView(*this);
+	this->pc->MoveTo(150,25);
+	this->nextBlocks.pop();
 }
 
 // Called by a worker thread every time the main clock advances
@@ -97,8 +124,14 @@ TetrisTable::Tick()
 void
 TetrisTable::FreeRows()
 {
-	// search through every row, trying to find a full one
-	bool foundFullRow = true;
+	// TODO: Issues with freeing rows, sometimes whole rows aren't freed
+	// and other times rows are freed when they aren't supposed to be
+	// pieces drop too much sometimes after they free a row
+	
+	// keep track of which rows we are deleting
+	std::vector<int> delRows(0);
+	bool full = true;
+	// search through every row, cataloging the full ones
 	for(int i = 0; i < rowSize; i++)
 	{
 		for(int j = 0; j < colSize; j++)
@@ -106,24 +139,48 @@ TetrisTable::FreeRows()
 			if(bottomMatrix[i][j] == NULL)
 			{
 				// move to the next row
-				foundFullRow = false;
+				full = false;
 				break;
 			}	
 		}
-		if(foundFullRow)
+		if(full == true)
 		{
-			printf("FULL ROW AT %d\n", i);
-			// delete all the blocks there
+			delRows.push_back(i);
 			for(int j = 0; j < colSize; j++)
 			{
 				bottomMatrix[i][j]->RemoveSelf();
 				delete bottomMatrix[i][j];
 				bottomMatrix[i][j] = NULL;
 			}
-			// TODO: move all the blocks down to fill in the gap
-			// TODO: scoring system
 		}
-		foundFullRow = true;
+		full = true;
+	}
+
+	// TODO: scoring system
+	// LEVEL:  1		2			3			4
+	// POINTS: 40*(n+1) 100*(n+1)	300*(n+1)	1200*(n+1)
+	// where n is the current level
+	
+	// move all the blocks down to fill the gap
+	// for every delRows move everything above it down by 1
+	// then offset 1 from every other delRows
+	int delRowsOffset = 0;
+	for(int row = 0; row < delRows.size(); row++)
+	{
+		for(int i = delRows[row]+delRowsOffset; i > 0; i--)
+		{
+			for(int j = 0; j < colSize; j++)
+			{
+				bottomMatrix[i][j] = bottomMatrix[i-1][j];
+				bottomMatrix[i-1][j] = NULL;
+				if(bottomMatrix[i][j] != NULL)
+				{
+					bottomMatrix[i][j]->MoveBy(0,BLOCK_SIZE);	
+				}
+			}
+		}
+		
+		delRowsOffset++;	
 	}
 }
 
@@ -187,6 +244,9 @@ TetrisTable::BeyondScreen(int bx)
 TetrisTable::CollisionType
 TetrisTable::CheckCollision()
 {
+	// TODO: Still issue with some collisions
+	// TODO: do neighbor collision model instead
+	
 	CollisionType ret = NONE;
 	if(this->pc != NULL)
 	{
@@ -200,6 +260,9 @@ TetrisTable::CheckCollision()
 			if(curRect.bottom > Bounds().Height()-BLOCK_SIZE 
 			   || curCollide == STICK)
 			{
+				// TODO: before something sticks, allow it to move a little bit
+				// but still have it collide
+				
 				// make this become apart of the blocks at the
 				// bottom of the screen
 				BlockView **newBlocks = this->pc->GetBlocks();

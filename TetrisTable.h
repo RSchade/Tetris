@@ -9,9 +9,7 @@
 #include <Point.h>
 #include <Control.h>
 #include <InterfaceDefs.h>
-#include <vector>
-
-using namespace std;
+#include <queue>
 
 const int WIDTH = 400;
 const int HEIGHT = 400;
@@ -47,6 +45,7 @@ private:
 	thread_id					time_thread;
 	TetrisPiece					*pc;
 	BlockView					*bottomMatrix[rowSize][colSize];
+	std::queue<TetrisPiece*>	nextBlocks;
 };
 
 

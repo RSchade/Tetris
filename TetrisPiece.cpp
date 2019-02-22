@@ -1,15 +1,13 @@
 #include "TetrisPiece.h"
 
 // Initializes a given tetris piece with its top left corner at (0,0)
-// add all squares to the given BView
-TetrisPiece::TetrisPiece(PieceType typ, BView &parent)
+TetrisPiece::TetrisPiece(PieceType typ)
 {
 	this->type = typ;
 	for(int i = 0; i < NUM_BLOCKS; i++)
 	{
 		this->blocks[i] = new BlockView();
 		this->blocks[i]->ResizeTo(BLOCK_SIZE,BLOCK_SIZE);	
-		parent.AddChild(this->blocks[i]);
 	}
 	switch(typ)
 	{
@@ -27,7 +25,7 @@ TetrisPiece::TetrisPiece(PieceType typ, BView &parent)
 			this->blocks[1]->MoveTo(BPoint(BLOCK_SIZE,0));
 			this->blocks[2]->MoveTo(BPoint(0,BLOCK_SIZE));
 			this->blocks[3]->MoveTo(BPoint(BLOCK_SIZE,BLOCK_SIZE));
-			center = new BPoint(BLOCK_SIZE/2,BLOCK_SIZE/2);
+			center = new BPoint(BLOCK_SIZE,BLOCK_SIZE);
 			break;
 		}
 		case TPOLY:
@@ -86,6 +84,15 @@ TetrisPiece::~TetrisPiece(void)
 }
 
 void
+TetrisPiece::AddToView(BView &parent)
+{
+	for(int i = 0; i < NUM_BLOCKS; i++)
+	{
+		parent.AddChild(this->blocks[i]);
+	}
+}
+
+void
 TetrisPiece::MoveTo(int x, int y)
 {
 	// figure out center's current distance away and move that amount
@@ -108,6 +115,11 @@ TetrisPiece::MoveBy(int dx, int dy)
 void
 TetrisPiece::Rotate(PieceRot rot)
 {
+	// if we are a square, don't rotate
+	if(this->type == SQUARE)
+	{
+		return;
+	}
 	// 'about' attribute is the basis for all rotations
 	BPoint about = *(this->center);
 	for(int i = 0; i < this->NUM_BLOCKS; i++)
