@@ -1,12 +1,16 @@
 #include "TetrisPiece.h"
 
+#include <stdlib.h>
+
 // Initializes a given tetris piece with its top left corner at (0,0)
 TetrisPiece::TetrisPiece(PieceType typ)
 {
 	this->type = typ;
+	int *color = colors[rand()%NUM_COLORS];
 	for(int i = 0; i < NUM_BLOCKS; i++)
 	{
 		this->blocks[i] = new BlockView();
+		this->blocks[i]->SetColor(color);
 		this->blocks[i]->ResizeTo(BLOCK_SIZE,BLOCK_SIZE);	
 	}
 	switch(typ)

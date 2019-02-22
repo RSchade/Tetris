@@ -10,7 +10,7 @@
 MainWindow::MainWindow(void)
 	:	BWindow(BRect(100,100,600,500),"Main Window",B_TITLED_WINDOW, B_ASYNCHRONOUS_CONTROLS)
 {
-	BStringView *scoreView = new BStringView(BRect(450, 25, 475, 50), "score", "N/A");
+	BStringView *scoreView = new BStringView(BRect(450, 25, 475, 50), "score", "0");
 	AddChild(scoreView);
 	
 	this->table = new TetrisTable(scoreView);

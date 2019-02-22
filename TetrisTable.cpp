@@ -114,14 +114,16 @@ TetrisTable::Tick()
 		{
 			// Lower the active piece
 			MoveActive(0,BLOCK_SIZE);
-		} else {
+		} 
+		
+		// need this, state can change after MoveActive
+		if(this->pc == NULL) {
+			// Check for rows to free at the bottom
+			FreeRows();
 			// Create a new piece at the top
 			NewPiece();
 		}
-		// If we can, free some rows
-		// TODO: call this less often, only needed when we just
-		// dropped a piece
-		FreeRows();
+		
 		Window()->UnlockLooper();
 	}
 }
