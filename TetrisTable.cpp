@@ -6,6 +6,7 @@
 #include <vector>
 #include <File.h>
 #include <Directory.h>
+#include <Message.h>
 
 int32
 tetris_clock(void *params)
@@ -14,12 +15,12 @@ tetris_clock(void *params)
 	while(1) {
 		table->Tick();
 		// TODO: speed up as the game goes on
-		snooze(1000000);
+		snooze(1000000 - table->level*5000);
 	}
 	return 0;
 }
 
-TetrisTable::TetrisTable(void)
+TetrisTable::TetrisTable(BStringView *scoreView)
  :	BView(BRect(0,0,WIDTH,HEIGHT), "tetristable", B_FOLLOW_NONE, B_WILL_DRAW)
 {	
 	// TODO: make matrix resizable
@@ -30,6 +31,9 @@ TetrisTable::TetrisTable(void)
 			bottomMatrix[i][j] = NULL;
 		}
 	}
+	this->level = 1;
+	this->score = 0;
+	this->scoreView = scoreView;
 	this->shiftTime = -1;
 	time_thread = spawn_thread(tetris_clock, "tetrisclock", 
 							   B_REAL_TIME_PRIORITY, this);
@@ -86,7 +90,6 @@ TetrisTable::NewPiece()
 		{
 			// 7 types of pieces
 			int randPiece = (int)(bytes[i] % 7);
-			// this->nextBlocks.push(new TetrisPiece((PieceType)randPiece));
 			this->nextBlocks.push(new TetrisPiece((PieceType)randPiece));
 		}	
 	}
@@ -116,6 +119,8 @@ TetrisTable::Tick()
 			NewPiece();
 		}
 		// If we can, free some rows
+		// TODO: call this less often, only needed when we just
+		// dropped a piece
 		FreeRows();
 		Window()->UnlockLooper();
 	}
@@ -156,10 +161,19 @@ TetrisTable::FreeRows()
 		full = true;
 	}
 
-	// TODO: scoring system
-	// LEVEL:  1		2			3			4
+	// scoring system
+	// CLEAR:  1		2			3			4
 	// POINTS: 40*(n+1) 100*(n+1)	300*(n+1)	1200*(n+1)
 	// where n is the current level
+	if(delRows.size() <= 4 && delRows.size() > 0)
+	{
+		// don't do this if it isn't array out of bounds, but that shouldn't happen
+		this->score += this->scoreLevels[delRows.size()] * (this->level + 1);
+		// update text field
+		char scoreStr[sizeof(long int)+1];
+		sprintf(scoreStr, "%ld", this->score);
+		this->scoreView->SetText(scoreStr);	
+	}
 	
 	// move all the blocks down to fill the gap
 	// for every delRows move everything above it down by 1

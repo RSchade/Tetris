@@ -4,8 +4,10 @@
 #include "TetrisTable.h"
 
 #include <Window.h>
+#include <StringView.h>
 #include <MenuBar.h>
 
+			
 class MainWindow : public BWindow
 {
 public:
@@ -16,11 +18,13 @@ public:
 private:
 			BMenuBar	*fMenuBar;
 			TetrisTable *table;
+			// TODO: make this public?
 			enum
 			{
 				M_NEW_GAME = 'ngam',
-				M_PAUSE_GAME = 'pgam'
-			};
+				M_PAUSE_GAME = 'pgam',
+				M_CLEARED_ROW = 'crow'
+			};	
 };
 
 #endif

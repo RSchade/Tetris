@@ -4,19 +4,22 @@
 #include <Menu.h>
 #include <MenuItem.h>
 #include <View.h>
-#include <GridLayout.h>
 #include <stdio.h>
 #include <Message.h>
 
 MainWindow::MainWindow(void)
-	:	BWindow(BRect(100,100,500,500),"Main Window",B_TITLED_WINDOW, B_ASYNCHRONOUS_CONTROLS)
-{	
-	table = new TetrisTable();
-	AddChild(table);
+	:	BWindow(BRect(100,100,600,500),"Main Window",B_TITLED_WINDOW, B_ASYNCHRONOUS_CONTROLS)
+{
+	BStringView *scoreView = new BStringView(BRect(450, 25, 475, 50), "score", "N/A");
+	AddChild(scoreView);
+	
+	this->table = new TetrisTable(scoreView);
+	AddChild(this->table);
 	table->MakeFocus(true);
 	
 	// TODO: Make UI with new game, pause game, etc...
 	// TODO: High score system
+	
 	// simulate clicking new game
 	PostMessage(new BMessage(M_NEW_GAME));
 }

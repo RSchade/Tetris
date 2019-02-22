@@ -9,6 +9,7 @@
 #include <Point.h>
 #include <Control.h>
 #include <InterfaceDefs.h>
+#include <StringView.h>
 #include <queue>
 
 const int WIDTH = 400;
@@ -18,13 +19,16 @@ const int colSize = WIDTH/BLOCK_SIZE;
 
 class TetrisTable : public BView {
 public:
-			TetrisTable(void);
-			~TetrisTable(void);
-	void	Draw(BRect rect);
-	void    KeyDown(const char *bytes, int32 numBytes);
-	void    Tick();
-	void    Pause();
-	void    Start();
+				TetrisTable(BStringView *scoreView);
+				~TetrisTable(void);
+	void		Draw(BRect rect);
+	void    	KeyDown(const char *bytes, int32 numBytes);
+	void    	Tick();
+	void    	Pause();
+	void    	Start();
+	int			level;
+	long int	score;
+	
 private:
 	enum CollisionType
 	{
@@ -47,6 +51,12 @@ private:
 	BlockView					*bottomMatrix[rowSize][colSize];
 	std::queue<TetrisPiece*>	nextBlocks;
 	bigtime_t					shiftTime;
+	int 						scoreLevels[5] = {0, 40, 100, 300, 1200};
+	BStringView					*scoreView;
+	enum
+	{
+		M_CLEARED_ROW = 'crow'
+	};
 };
 
 
