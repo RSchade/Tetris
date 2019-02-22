@@ -129,8 +129,9 @@ TetrisTable::FreeRows()
 	// keep track of which rows we are deleting
 	std::vector<int> delRows(0);
 	bool full = true;
-	// search through every row, cataloging the full ones
-	for(int i = 0; i < rowSize; i++)
+	// search through every row, cataloging the full ones and deleting
+	// everything in them
+	for(int i = rowSize; i > 0; i--)
 	{
 		for(int j = 0; j < colSize; j++)
 		{
@@ -146,6 +147,7 @@ TetrisTable::FreeRows()
 			delRows.push_back(i);
 			for(int j = 0; j < colSize; j++)
 			{
+				bottomMatrix[i][j]->Hide();
 				bottomMatrix[i][j]->RemoveSelf();
 				delete bottomMatrix[i][j];
 				bottomMatrix[i][j] = NULL;
@@ -169,11 +171,14 @@ TetrisTable::FreeRows()
 		{
 			for(int j = 0; j < colSize; j++)
 			{
-				bottomMatrix[i][j] = bottomMatrix[i-1][j];
-				bottomMatrix[i-1][j] = NULL;
-				if(bottomMatrix[i][j] != NULL)
+				if(i-1 > 0)
 				{
-					bottomMatrix[i][j]->MoveBy(0,BLOCK_SIZE);	
+					bottomMatrix[i][j] = bottomMatrix[i-1][j];
+					bottomMatrix[i-1][j] = NULL;
+					if(bottomMatrix[i][j] != NULL)
+					{
+						bottomMatrix[i][j]->MoveBy(0,BLOCK_SIZE);	
+					}
 				}
 			}
 		}
