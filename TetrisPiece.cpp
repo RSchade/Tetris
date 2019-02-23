@@ -6,6 +6,7 @@
 TetrisPiece::TetrisPiece(PieceType typ)
 {
 	this->type = typ;
+	// random color for each piece
 	int *color = colors[rand()%NUM_COLORS];
 	for(int i = 0; i < NUM_BLOCKS; i++)
 	{

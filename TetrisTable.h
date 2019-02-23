@@ -27,6 +27,7 @@ public:
 	void    	Pause();
 	void    	Start();
 	int			level;
+	int			lines;
 	long int	score;
 	
 private:

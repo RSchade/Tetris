@@ -6,7 +6,7 @@ BlockView::BlockView(void)
  :	BView(BRect(0,0,25,25), "blockview", B_FOLLOW_NONE, 
  		  B_WILL_DRAW)
 {
-	// TODO: make the pieces look good, allow colors to be changed as well
+	// TODO: bitmap support, theming
 	//testImg = BTranslationUtils::GetBitmap("test.bmp");
 	Invalidate();
 }
@@ -32,7 +32,7 @@ void BlockView::Draw(BRect rect)
 	SetDrawingMode(B_OP_ALPHA);
 	SetHighColor(this->color[0], this->color[1],this->color[2]);
 	FillRect(Bounds());
-	// TODO: bitmap support, theming?
+	// TODO: bitmap support, theming
 	// DrawBitmap(testImg);
 	// bevel edges
 	SetHighColor(255,255,255,220);

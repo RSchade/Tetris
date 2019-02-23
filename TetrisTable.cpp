@@ -31,8 +31,9 @@ TetrisTable::TetrisTable(BStringView *scoreView)
 			bottomMatrix[i][j] = NULL;
 		}
 	}
-	this->level = 1;
+	this->level = 0;
 	this->score = 0;
+	this->lines = 0;
 	this->scoreView = scoreView;
 	this->shiftTime = -1;
 	time_thread = spawn_thread(tetris_clock, "tetrisclock", 
@@ -93,8 +94,9 @@ TetrisTable::NewPiece()
 			this->nextBlocks.push(new TetrisPiece((PieceType)randPiece));
 		}	
 	}
-	// TODO: add 'next' on screen
-	// TODO: game levels
+	
+	// TODO: add 'next' piece on screen
+	
 	// pop the next piece off the queue and put it in the right place
 	this->shiftTime = -1;
 	this->pc = this->nextBlocks.front();
@@ -169,12 +171,22 @@ TetrisTable::FreeRows()
 	// where n is the current level
 	if(delRows.size() <= 4 && delRows.size() > 0)
 	{
+		// TODO: factor these things out into separate functions (classes?)
 		// don't do this if it isn't array out of bounds, but that shouldn't happen
 		this->score += this->scoreLevels[delRows.size()] * (this->level + 1);
 		// update text field
 		char scoreStr[sizeof(long int)+1];
 		sprintf(scoreStr, "%ld", this->score);
-		this->scoreView->SetText(scoreStr);	
+		this->scoreView->SetText(scoreStr);
+		this->lines += delRows.size();
+		// every level is at 10 lines
+		// TODO: add different leveling schemes 
+		if((this->lines + 1) % 10 == 0)
+		{
+			printf("NEXT LEVEL\n");
+			this->level++;
+		}
+		printf("LINES: %d\n", this->lines);
 	}
 	
 	// move all the blocks down to fill the gap
