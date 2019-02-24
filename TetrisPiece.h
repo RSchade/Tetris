@@ -37,8 +37,8 @@ public:
 	BRect		*GetPos(void);
 	void		AddToView(BView &parent);
 	const int	NUM_BLOCKS = 4;
+	PieceType	type;
 private:
-	PieceType			type;
 	BlockView			*blocks[4];
 	BPoint				*center;
 	static const int	NUM_COLORS = 7;

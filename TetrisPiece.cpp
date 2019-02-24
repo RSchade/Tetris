@@ -14,6 +14,7 @@ TetrisPiece::TetrisPiece(PieceType typ)
 		this->blocks[i]->SetColor(color);
 		this->blocks[i]->ResizeTo(BLOCK_SIZE,BLOCK_SIZE);	
 	}
+	// always spawn with the flat side down
 	switch(typ)
 	{
 		case STRAIGHT:
@@ -21,6 +22,7 @@ TetrisPiece::TetrisPiece(PieceType typ)
 			for(int i = 0; i < NUM_BLOCKS; i++) {
 				this->blocks[i]->MoveTo(BPoint(BLOCK_SIZE*i,0));
 			}
+			// TODO: this center might not be right for SRS movement
 			center = new BPoint(BLOCK_SIZE*2,0);
 			break;	
 		}
@@ -35,29 +37,29 @@ TetrisPiece::TetrisPiece(PieceType typ)
 		}
 		case TPOLY:
 		{
-			this->blocks[0]->MoveTo(BPoint(0,0));
-			this->blocks[1]->MoveTo(BPoint(BLOCK_SIZE,0));
-			this->blocks[2]->MoveTo(BPoint(BLOCK_SIZE*2,0));
-			this->blocks[3]->MoveTo(BPoint(BLOCK_SIZE,BLOCK_SIZE));
-			center = new BPoint(BLOCK_SIZE,0);
+			this->blocks[0]->MoveTo(BPoint(0,BLOCK_SIZE));
+			this->blocks[1]->MoveTo(BPoint(BLOCK_SIZE,BLOCK_SIZE));
+			this->blocks[2]->MoveTo(BPoint(BLOCK_SIZE*2,BLOCK_SIZE));
+			this->blocks[3]->MoveTo(BPoint(BLOCK_SIZE,0));
+			center = new BPoint(BLOCK_SIZE,BLOCK_SIZE);
 			break;
 		}
 		case JPOLY:
 		{
-			this->blocks[0]->MoveTo(BPoint(0,0));
-			this->blocks[1]->MoveTo(BPoint(BLOCK_SIZE,0));
-			this->blocks[2]->MoveTo(BPoint(BLOCK_SIZE*2,0));
-			this->blocks[3]->MoveTo(BPoint(BLOCK_SIZE*2,BLOCK_SIZE));
-			center = new BPoint(BLOCK_SIZE,0);
+			this->blocks[0]->MoveTo(BPoint(0,BLOCK_SIZE));
+			this->blocks[1]->MoveTo(BPoint(BLOCK_SIZE,BLOCK_SIZE));
+			this->blocks[2]->MoveTo(BPoint(BLOCK_SIZE*2,BLOCK_SIZE));
+			this->blocks[3]->MoveTo(BPoint(0,0));
+			center = new BPoint(BLOCK_SIZE,BLOCK_SIZE);
 			break;
 		}
 		case LPOLY:
 		{
-			this->blocks[0]->MoveTo(BPoint(0,0));
-			this->blocks[1]->MoveTo(BPoint(0,BLOCK_SIZE));
-			this->blocks[2]->MoveTo(BPoint(BLOCK_SIZE,0));
+			this->blocks[0]->MoveTo(BPoint(0,BLOCK_SIZE));
+			this->blocks[1]->MoveTo(BPoint(BLOCK_SIZE,BLOCK_SIZE));
+			this->blocks[2]->MoveTo(BPoint(BLOCK_SIZE*2,BLOCK_SIZE));
 			this->blocks[3]->MoveTo(BPoint(BLOCK_SIZE*2,0));
-			center = new BPoint(BLOCK_SIZE,0);
+			center = new BPoint(BLOCK_SIZE,BLOCK_SIZE);
 			break;	
 		}
 		case SPOLY:

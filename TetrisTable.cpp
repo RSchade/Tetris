@@ -20,15 +20,21 @@ tetris_clock(void *params)
 	return 0;
 }
 
-TetrisTable::TetrisTable(BStringView *scoreView)
- :	BView(BRect(0,0,WIDTH,HEIGHT), "tetristable", B_FOLLOW_NONE, B_WILL_DRAW)
+// width and height are in blocks
+TetrisTable::TetrisTable(BStringView *scoreView, int rowSize, int colSize)
+ :	BView(BRect(0,0,colSize*BLOCK_SIZE,rowSize*BLOCK_SIZE), 
+    "tetristable", B_FOLLOW_NONE, B_WILL_DRAW)
 {	
-	// TODO: make matrix resizable
-	for(int i = 0; i < rowSize; i++)
+	// initialize board size constants and array
+	this->rowSize = rowSize;
+	this->colSize = colSize;
+	this->bottomMatrix = new BlockView**[rowSize];
+	for(int i = 0; i < this->rowSize; i++)
 	{
-		for(int j = 0; j < colSize; j++)
+		this->bottomMatrix[i] = new BlockView*[colSize];
+		for(int j = 0; j < this->colSize; j++)
 		{
-			bottomMatrix[i][j] = NULL;
+			this->bottomMatrix[i][j] = NULL;
 		}
 	}
 	this->level = 0;
@@ -74,6 +80,7 @@ TetrisTable::Pause()
 void
 TetrisTable::NewPiece()
 {
+	// TODO: support 7-bag and other randomization methods
 	// if there are less than 10 blocks queued up, add more
 	const int toQueue = 10;
 	if(this->nextBlocks.size() < toQueue/2)
@@ -101,7 +108,23 @@ TetrisTable::NewPiece()
 	this->shiftTime = -1;
 	this->pc = this->nextBlocks.front();
 	this->pc->AddToView(*this);
-	this->pc->MoveTo(150,25);
+	// TODO: customize spawn location
+	// Tetris spec is to start I/O in the middle, rest spawn left middle
+	// spawn horizontal, flat side first
+	// row 21 or 22
+	int spawnY = 22*BLOCK_SIZE;
+	int spawnX = 0;
+	switch(this->pc->type)
+	{
+		case STRAIGHT:
+		case SQUARE:
+			spawnX = (colSize/2)*BLOCK_SIZE;
+			break;
+		default:
+			spawnX = (colSize-1)/2 * BLOCK_SIZE;
+			break;
+	}
+	this->pc->MoveTo(spawnX,spawnY);
 	this->nextBlocks.pop();
 }
 
@@ -140,7 +163,7 @@ TetrisTable::FreeRows()
 	bool full = true;
 	// search through every row, cataloging the full ones and deleting
 	// everything in them
-	for(int i = rowSize; i > 0; i--)
+	for(int i = rowSize-1; i > 0; i--)
 	{
 		for(int j = 0; j < colSize; j++)
 		{
@@ -249,7 +272,8 @@ TetrisTable::MoveActive(int bx, int by)
 			// means we are gliding, don't let it move down at all
 			by = 0;	
 		}
-		// check if this piece is moving beyond the screen, if so can't move sideways
+		// check if this piece is moving beyond the screen, 
+		// if so can't move sideways
 		if(BeyondScreen(bx))
 		{
 			bx = 0;
@@ -266,7 +290,8 @@ TetrisTable::BeyondScreen(int bx)
 	for(int i = 0; i < this->pc->NUM_BLOCKS; i++)
 	{
 		BRect curFrame = blocks[i]->Frame();
-		if(curFrame.left+bx >= WIDTH || curFrame.right+bx < BLOCK_SIZE)
+		if(curFrame.left+bx >= this->colSize*BLOCK_SIZE || 
+		   curFrame.right+bx < BLOCK_SIZE)
 		{
 			return true;
 			break;	
@@ -321,7 +346,7 @@ TetrisTable::CheckCollision()
 					return STICK;
 				}
 			}
-			// return the most dominant term among all the blocks in the tetris piece
+			// combine all of the collisions together (OR bit vectors)
 			ret |= curCollide;
 		}
 	}
