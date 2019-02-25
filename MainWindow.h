@@ -16,7 +16,6 @@ public:
 			bool		QuitRequested(void);
 			
 private:
-			BMenuBar	*fMenuBar;
 			TetrisTable *table;
 			// TODO: make this public?
 			enum

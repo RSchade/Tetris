@@ -2,6 +2,7 @@
 #define TETRISTABLE_H
 
 #include "TetrisPiece.h"
+#include "DashUI.h"
 #include "BlockView.h"
 
 #include <SupportDefs.h>
@@ -10,11 +11,11 @@
 #include <Control.h>
 #include <InterfaceDefs.h>
 #include <StringView.h>
-#include <queue>
+#include <deque>
 
 class TetrisTable : public BView {
 public:
-				TetrisTable(BStringView *scoreView, int rowSize, int colSize);
+				TetrisTable(DashUI *ui, int rowSize, int colSize);
 				~TetrisTable(void);
 	void		Draw(BRect rect);
 	void    	KeyDown(const char *bytes, int32 numBytes);
@@ -39,16 +40,18 @@ private:
 	void						NewPiece();
 	void						FreeRows();
 	bool						BeyondScreen(int bx);
+	bool						TopOut(TetrisPiece *next);
+	BPoint						GetSpawnLoc(TetrisPiece *piece);
 	CollisionType				CollidesBottomBlocks(BRect rect);
 	CollisionType				CheckCollision();
 	BView						*block;
 	thread_id					time_thread;
 	TetrisPiece					*pc;
 	BlockView					***bottomMatrix;
-	std::queue<TetrisPiece*>	nextBlocks;
+	DashUI						*dashUi;
+	std::deque<TetrisPiece*>	nextBlocks;
 	bigtime_t					shiftTime;
 	int 						scoreLevels[5] = {0, 40, 100, 300, 1200};
-	BStringView					*scoreView;
 	int							rowSize;
 	int							colSize;
 };

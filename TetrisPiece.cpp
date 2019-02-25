@@ -83,6 +83,17 @@ TetrisPiece::TetrisPiece(PieceType typ)
 	}
 }
 
+// Copy constructor
+TetrisPiece::TetrisPiece(const TetrisPiece &pc)
+{
+	this->center = new BPoint(*pc.center);
+	this->type = pc.type;
+	for(int i = 0; i < this->NUM_BLOCKS; i++)
+	{
+		this->blocks[i] = new BlockView(*pc.blocks[i]);	
+	}
+}
+
 // Deletes this class, does not get rid of any of the
 // constituient blocks, those must be removed manually
 TetrisPiece::~TetrisPiece(void)
@@ -96,7 +107,17 @@ TetrisPiece::AddToView(BView &parent)
 	for(int i = 0; i < NUM_BLOCKS; i++)
 	{
 		parent.AddChild(this->blocks[i]);
+		this->blocks[i]->Invalidate();
 	}
+}
+
+void
+TetrisPiece::RemoveFromParent()
+{
+	for(int i = 0; i < NUM_BLOCKS; i++)
+	{
+		this->blocks[i]->RemoveSelf();	
+	}	
 }
 
 void

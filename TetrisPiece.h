@@ -29,6 +29,7 @@ const int BLOCK_SIZE = 25;
 class TetrisPiece {
 public:
 				TetrisPiece(PieceType typ);
+				TetrisPiece(const TetrisPiece &pc);
 				~TetrisPiece(void);
 	void    	MoveTo(int x, int y);
 	void    	MoveBy(int dx, int dy);
@@ -36,6 +37,7 @@ public:
 	BlockView	**GetBlocks(void);
 	BRect		*GetPos(void);
 	void		AddToView(BView &parent);
+	void		RemoveFromParent(void);
 	const int	NUM_BLOCKS = 4;
 	PieceType	type;
 private:

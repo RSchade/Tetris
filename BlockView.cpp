@@ -11,6 +11,17 @@ BlockView::BlockView(void)
 	Invalidate();
 }
 
+BlockView::BlockView(const BlockView &bview)
+ : BView(BRect(0,0,25,25), "blockview", B_FOLLOW_NONE,
+ 		 B_WILL_DRAW)
+{
+	MoveTo(bview.Frame().LeftTop());
+	for(int i = 0; i < 3; i++)
+	{
+		this->color[i] = bview.color[i];
+	}	
+}
+
 BlockView::~BlockView(void) 
 {
 }

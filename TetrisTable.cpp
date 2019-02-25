@@ -8,6 +8,8 @@
 #include <Directory.h>
 #include <Message.h>
 
+#include <StopWatch.h>
+
 int32
 tetris_clock(void *params)
 {
@@ -21,10 +23,12 @@ tetris_clock(void *params)
 }
 
 // width and height are in blocks
-TetrisTable::TetrisTable(BStringView *scoreView, int rowSize, int colSize)
+TetrisTable::TetrisTable(DashUI *ui, int rowSize, int colSize)
  :	BView(BRect(0,0,colSize*BLOCK_SIZE,rowSize*BLOCK_SIZE), 
     "tetristable", B_FOLLOW_NONE, B_WILL_DRAW)
 {	
+	this->dashUi = ui;
+	this->dashUi->SetBlockDeque(&this->nextBlocks);
 	// initialize board size constants and array
 	this->rowSize = rowSize;
 	this->colSize = colSize;
@@ -40,7 +44,6 @@ TetrisTable::TetrisTable(BStringView *scoreView, int rowSize, int colSize)
 	this->level = 0;
 	this->score = 0;
 	this->lines = 0;
-	this->scoreView = scoreView;
 	this->shiftTime = -1;
 	time_thread = spawn_thread(tetris_clock, "tetrisclock", 
 							   B_REAL_TIME_PRIORITY, this);
@@ -98,23 +101,31 @@ TetrisTable::NewPiece()
 		{
 			// 7 types of pieces
 			int randPiece = (int)(bytes[i] % 7);
-			this->nextBlocks.push(new TetrisPiece((PieceType)randPiece));
+			this->nextBlocks.push_back(new TetrisPiece((PieceType)randPiece));
 		}	
 	}
-	
-	// TODO: add 'next' piece on screen
 	
 	// pop the next piece off the queue and put it in the right place
 	this->shiftTime = -1;
 	this->pc = this->nextBlocks.front();
 	this->pc->AddToView(*this);
+	BPoint spawn = GetSpawnLoc(this->pc);
+	this->pc->MoveTo(spawn.x,spawn.y);
+	this->nextBlocks.pop_front();	
+	// update 'next' piece on screen
+	this->dashUi->UpdatePreviews();
+}
+
+BPoint
+TetrisTable::GetSpawnLoc(TetrisPiece *piece)
+{
 	// TODO: customize spawn location
 	// Tetris spec is to start I/O in the middle, rest spawn left middle
 	// spawn horizontal, flat side first
 	// row 21 or 22
 	int spawnY = 22*BLOCK_SIZE;
 	int spawnX = 0;
-	switch(this->pc->type)
+	switch(piece->type)
 	{
 		case STRAIGHT:
 		case SQUARE:
@@ -124,8 +135,7 @@ TetrisTable::NewPiece()
 			spawnX = (colSize-1)/2 * BLOCK_SIZE;
 			break;
 	}
-	this->pc->MoveTo(spawnX,spawnY);
-	this->nextBlocks.pop();
+	return BPoint(spawnX,spawnY);
 }
 
 // Called by a worker thread every time the main clock advances
@@ -135,22 +145,72 @@ TetrisTable::Tick()
 {
 	if(Window() != NULL && Window()->LockLooper()) 
 	{
+		//BStopWatch *w = new BStopWatch("ticktime");
 		if(this->pc != NULL)
 		{
 			// Lower the active piece
 			MoveActive(0,BLOCK_SIZE);
 		} 
+		//w->Lap();
 		
 		// need this, state can change after MoveActive
 		if(this->pc == NULL) {
 			// Check for rows to free at the bottom
 			FreeRows();
-			// Create a new piece at the top
-			NewPiece();
+			//w->Lap();
+			// Check for lose state
+			if(TopOut(this->nextBlocks.front()))
+			{
+				printf("GAME LOST\n");
+				Pause();
+			} else
+			{
+				// Create a new piece at the top
+				NewPiece();
+				//w->Lap();
+			}
 		}
+		//w->Lap();
+		//delete w;
 		
 		Window()->UnlockLooper();
 	}
+}
+
+bool
+TetrisTable::TopOut(TetrisPiece *next)
+{
+	// TODO: customize conditions
+	// Tops out if the spawn of a new piece overlaps at least 1 block
+	// or if there is a piece above the visible playfield (20 from bottom)
+	BPoint spawn = GetSpawnLoc(next);
+	next->MoveTo(spawn.x,spawn.y);
+	BRect *blocks = next->GetPos();
+	for(int i = 0; i < next->NUM_BLOCKS; i++)
+	{
+		BPoint curBlock = blocks[i].LeftTop();
+		int curRow = (int)(curBlock.y/BLOCK_SIZE);
+		int curCol = (int)(curBlock.x/BLOCK_SIZE);
+		if(this->bottomMatrix[curRow][curCol] != NULL)
+		{
+			delete blocks;
+			return true;
+		}
+	}
+	delete blocks;
+	// TODO: make the 'too high' value adjustable
+	for(int i = 20; i > 0; i--)
+	{
+		for(int j = 0; j < colSize; j++)
+		{
+			if(this->bottomMatrix[i][j] != NULL)
+			{
+				printf("TOO HIGH TOP OUT\n");
+				return true;
+			}	
+		}
+	}	
+	return false;
 }
 
 // Find contiguous rows of pieces and frees them from the board
@@ -158,6 +218,8 @@ TetrisTable::Tick()
 void
 TetrisTable::FreeRows()
 {
+	printf("FREE CHECK\n");
+	// TODO: still something wrong with this... keep monitoring it
 	// keep track of which rows we are deleting
 	std::vector<int> delRows(0);
 	bool full = true;
@@ -179,6 +241,7 @@ TetrisTable::FreeRows()
 			delRows.push_back(i);
 			for(int j = 0; j < colSize; j++)
 			{
+				printf("FULL ROW AT: %d\n", i);
 				bottomMatrix[i][j]->Hide();
 				bottomMatrix[i][j]->RemoveSelf();
 				delete bottomMatrix[i][j];
@@ -197,10 +260,6 @@ TetrisTable::FreeRows()
 		// TODO: factor these things out into separate functions (classes?)
 		// don't do this if it isn't array out of bounds, but that shouldn't happen
 		this->score += this->scoreLevels[delRows.size()] * (this->level + 1);
-		// update text field
-		char scoreStr[sizeof(long int)+1];
-		sprintf(scoreStr, "%ld", this->score);
-		this->scoreView->SetText(scoreStr);
 		this->lines += delRows.size();
 		// every level is at 10 lines
 		// TODO: add different leveling schemes 
@@ -209,6 +268,10 @@ TetrisTable::FreeRows()
 			printf("NEXT LEVEL\n");
 			this->level++;
 		}
+		// update text field
+		dashUi->SetScore(this->score);
+		dashUi->SetLines(this->lines);
+		dashUi->SetLevel(this->level);
 		printf("LINES: %d\n", this->lines);
 	}
 	
@@ -327,6 +390,8 @@ TetrisTable::CheckCollision()
 					shiftTime = real_time_clock_usecs();	
 				}
 				
+				// TODO: shift time should be adjustable and only happen
+				// if the block is moved as it hits the ground
 				if(real_time_clock_usecs() - shiftTime >= 100000)
 				{
 					// make this become apart of the blocks at the

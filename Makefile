@@ -23,6 +23,7 @@ APP_MIME_SIG =
 SRCS = \
 	 App.cpp  \
 	 BlockView.cpp  \
+	 DashUI.cpp  \
 	 MainWindow.cpp  \
 	 TetrisPiece.cpp  \
 	 TetrisTable.cpp  \
@@ -41,6 +42,8 @@ RSRCS = \
 
 # End Pe/Eddie support.
 # @<-src@ 
+#%}
+
 #%}
 
 #%}

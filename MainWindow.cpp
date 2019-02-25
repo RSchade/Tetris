@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "DashUI.h"
 
 #include <Application.h>
 #include <Menu.h>
@@ -8,13 +9,14 @@
 #include <Message.h>
 
 MainWindow::MainWindow(void)
-	:	BWindow(BRect(100,100,600,700),"Main Window",B_TITLED_WINDOW, B_ASYNCHRONOUS_CONTROLS)
-{
-	BStringView *scoreView = new BStringView(BRect(450, 25, 475, 50), "score", "0");
-	AddChild(scoreView);
+	:	BWindow(BRect(100,100,600,700),"Main Window",
+			    B_TITLED_WINDOW, B_ASYNCHRONOUS_CONTROLS)
+{	
+	DashUI *ui = new DashUI(BRect(260, 0, 400, 500), 3);
+	AddChild(ui);
 	
 	// per tetris spec, 40 rows, 10 columns, 20 rows, 10 columns visible
-	this->table = new TetrisTable(scoreView, 40, 10);
+	this->table = new TetrisTable(ui, 40, 10);
 	// move up to only have part of it visible
 	this->table->MoveTo(BPoint(0, -20*BLOCK_SIZE));
 	AddChild(this->table);
