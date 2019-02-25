@@ -29,7 +29,7 @@ DashUI::DashUI(BRect dashBox, int previews)
 								"level", "0");
 	this->linesView = new BStringView(BRect(left, top+110, right, top+130), 
 								"lines", "0");
-	this->blockView = new BView(BRect(left, top+150, right, top+350),
+	this->blockView = new BView(BRect(left, top+150, right, top+480),
 								"preview", B_FOLLOW_ALL, B_WILL_DRAW);
 	AddChild(this->scoreView);
 	AddChild(this->levelView);
@@ -90,6 +90,7 @@ DashUI::UpdatePreviews()
 		}
 		curRef = this->blockDeque->at(i);
 		TetrisPiece *cur = new TetrisPiece(*curRef);
+		// TODO: put the previews in a better spot?
 		cur->MoveBy(0,offset);
 		offset += 55;
 		cur->AddToView(*this->blockView);

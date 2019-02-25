@@ -19,10 +19,10 @@ public:
 	void	UpdatePreviews(void);
 	void	SetBlockDeque(std::deque<TetrisPiece*> *newDeque);
 	void	Draw(BRect rect);
+	int 	previews;
 	
 private:
 	std::deque<TetrisPiece*>	*blockDeque;
-	int 						previews;
 	TetrisPiece					**previewRefs;
 	BStringView					*scoreView;
 	BStringView					*levelView;

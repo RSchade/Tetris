@@ -4,6 +4,7 @@
 #include "TetrisPiece.h"
 #include "DashUI.h"
 #include "BlockView.h"
+#include "RandomMethod.h"
 
 #include <SupportDefs.h>
 #include <View.h>
@@ -44,6 +45,7 @@ private:
 	BPoint						GetSpawnLoc(TetrisPiece *piece);
 	CollisionType				CollidesBottomBlocks(BRect rect);
 	CollisionType				CheckCollision();
+	RandomMethod				*randomizer;
 	BView						*block;
 	thread_id					time_thread;
 	TetrisPiece					*pc;

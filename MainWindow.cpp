@@ -12,7 +12,7 @@ MainWindow::MainWindow(void)
 	:	BWindow(BRect(100,100,600,700),"Main Window",
 			    B_TITLED_WINDOW, B_ASYNCHRONOUS_CONTROLS)
 {	
-	DashUI *ui = new DashUI(BRect(260, 0, 400, 500), 3);
+	DashUI *ui = new DashUI(BRect(260, 0, 400, 500), 6);
 	AddChild(ui);
 	
 	// per tetris spec, 40 rows, 10 columns, 20 rows, 10 columns visible

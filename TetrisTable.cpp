@@ -1,5 +1,7 @@
 #include "TetrisTable.h"
 #include "BlockView.h"
+#include "7Bag.h"
+#include "TGMRand.h"
 
 #include <OS.h>
 #include <Window.h>
@@ -29,6 +31,7 @@ TetrisTable::TetrisTable(DashUI *ui, int rowSize, int colSize)
 {	
 	this->dashUi = ui;
 	this->dashUi->SetBlockDeque(&this->nextBlocks);
+	this->randomizer = new TGMRand(3, 6);
 	// initialize board size constants and array
 	this->rowSize = rowSize;
 	this->colSize = colSize;
@@ -83,26 +86,29 @@ TetrisTable::Pause()
 void
 TetrisTable::NewPiece()
 {
-	// TODO: support 7-bag and other randomization methods
-	// if there are less than 10 blocks queued up, add more
-	const int toQueue = 10;
-	if(this->nextBlocks.size() < toQueue/2)
+	if(this->nextBlocks.size() <= this->dashUi->previews)
 	{
-		BFile random(new BDirectory("/dev"), "urandom", B_READ_ONLY);
-		if(random.InitCheck() != B_OK)
+		// queue up twice what the dashboard needs to display the previews
+		for(int i = 0; i < 20; i++)
 		{
-			printf("error with getting random numbers\n");
-			// TODO: quit
+			// if it's the first time do the start condition logic
+			TetrisPiece *newPc = this->randomizer->GetNextPiece();
+			while(nextBlocks.size() == 0 && 
+			     (newPc->type == SPOLY || newPc->type == ZPOLY || newPc->type == SQUARE))
+			{
+				// TODO: customize these in a different layer?
+				// game never starts with S, Z or O (for TGM and some other implementations)
+				BlockView **blocks = newPc->GetBlocks();
+				for(int j = 0; j < newPc->NUM_BLOCKS; j++)
+				{
+					delete blocks[j];
+				}
+				delete newPc;
+				newPc = this->randomizer->GetNextPiece();
+				printf("HAD TO PICK NEW START PIECE\n");
+			}
+			this->nextBlocks.push_front(newPc);
 		}
-		// gather 10 random bytes
-		unsigned char *bytes = new unsigned char[toQueue];
-		random.Read(bytes, toQueue);
-		for(int i = 0; i < toQueue; i++)
-		{
-			// 7 types of pieces
-			int randPiece = (int)(bytes[i] % 7);
-			this->nextBlocks.push_back(new TetrisPiece((PieceType)randPiece));
-		}	
 	}
 	
 	// pop the next piece off the queue and put it in the right place
@@ -255,8 +261,10 @@ TetrisTable::FreeRows()
 	// CLEAR:  1		2			3			4
 	// POINTS: 40*(n+1) 100*(n+1)	300*(n+1)	1200*(n+1)
 	// where n is the current level
+	printf("DEL ROWS %p\n", delRows);
 	if(delRows.size() <= 4 && delRows.size() > 0)
 	{
+		printf("HAVE ROWS TO DEL\n");
 		// TODO: factor these things out into separate functions (classes?)
 		// don't do this if it isn't array out of bounds, but that shouldn't happen
 		this->score += this->scoreLevels[delRows.size()] * (this->level + 1);
@@ -281,6 +289,7 @@ TetrisTable::FreeRows()
 	int delRowsOffset = 0;
 	for(int row = 0; row < delRows.size(); row++)
 	{
+		printf("MOVE ROW DOWN %d\n", row);
 		for(int i = delRows[row]+delRowsOffset; i > 0; i--)
 		{
 			for(int j = 0; j < colSize; j++)

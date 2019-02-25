@@ -21,12 +21,15 @@ APP_MIME_SIG =
 #	so that Pe and Eddie can fill them in for you.
 #%{
 SRCS = \
+	 7Bag.cpp  \
 	 App.cpp  \
 	 BlockView.cpp  \
 	 DashUI.cpp  \
 	 MainWindow.cpp  \
+	 RandomMethod.cpp  \
 	 TetrisPiece.cpp  \
 	 TetrisTable.cpp  \
+	 TGMRand.cpp  \
 
 
 #	Specify the resource definition files to use. Full or relative paths can be
