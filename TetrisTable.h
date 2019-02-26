@@ -26,6 +26,7 @@ public:
 	int			level;
 	int			lines;
 	long int	score;
+	int			G;
 	
 private:
 	enum CollisionType

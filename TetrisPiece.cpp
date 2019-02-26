@@ -6,13 +6,14 @@
 TetrisPiece::TetrisPiece(PieceType typ)
 {
 	this->type = typ;
+	this->size = 25;
 	// random color for each piece
 	int *color = colors[rand()%NUM_COLORS];
 	for(int i = 0; i < NUM_BLOCKS; i++)
 	{
 		this->blocks[i] = new BlockView();
 		this->blocks[i]->SetColor(color);
-		this->blocks[i]->ResizeTo(BLOCK_SIZE,BLOCK_SIZE);	
+		this->blocks[i]->ResizeTo(this->size,this->size);	
 	}
 	// always spawn with the flat side down
 	switch(typ)
@@ -20,64 +21,64 @@ TetrisPiece::TetrisPiece(PieceType typ)
 		case STRAIGHT:
 		{
 			for(int i = 0; i < NUM_BLOCKS; i++) {
-				this->blocks[i]->MoveTo(BPoint(BLOCK_SIZE*i,0));
+				this->blocks[i]->MoveTo(BPoint(this->size*i,0));
 			}
 			// TODO: this center might not be right for SRS movement
-			center = new BPoint(BLOCK_SIZE*2,0);
+			center = new BPoint(this->size*2,0);
 			break;	
 		}
 		case SQUARE:
 		{
 			this->blocks[0]->MoveTo(BPoint(0,0));
-			this->blocks[1]->MoveTo(BPoint(BLOCK_SIZE,0));
-			this->blocks[2]->MoveTo(BPoint(0,BLOCK_SIZE));
-			this->blocks[3]->MoveTo(BPoint(BLOCK_SIZE,BLOCK_SIZE));
-			center = new BPoint(BLOCK_SIZE,BLOCK_SIZE);
+			this->blocks[1]->MoveTo(BPoint(this->size,0));
+			this->blocks[2]->MoveTo(BPoint(0,this->size));
+			this->blocks[3]->MoveTo(BPoint(this->size,this->size));
+			center = new BPoint(this->size,this->size);
 			break;
 		}
 		case TPOLY:
 		{
-			this->blocks[0]->MoveTo(BPoint(0,BLOCK_SIZE));
-			this->blocks[1]->MoveTo(BPoint(BLOCK_SIZE,BLOCK_SIZE));
-			this->blocks[2]->MoveTo(BPoint(BLOCK_SIZE*2,BLOCK_SIZE));
-			this->blocks[3]->MoveTo(BPoint(BLOCK_SIZE,0));
-			center = new BPoint(BLOCK_SIZE,BLOCK_SIZE);
+			this->blocks[0]->MoveTo(BPoint(0,this->size));
+			this->blocks[1]->MoveTo(BPoint(this->size,this->size));
+			this->blocks[2]->MoveTo(BPoint(this->size*2,this->size));
+			this->blocks[3]->MoveTo(BPoint(this->size,0));
+			center = new BPoint(this->size,this->size);
 			break;
 		}
 		case JPOLY:
 		{
-			this->blocks[0]->MoveTo(BPoint(0,BLOCK_SIZE));
-			this->blocks[1]->MoveTo(BPoint(BLOCK_SIZE,BLOCK_SIZE));
-			this->blocks[2]->MoveTo(BPoint(BLOCK_SIZE*2,BLOCK_SIZE));
+			this->blocks[0]->MoveTo(BPoint(0,this->size));
+			this->blocks[1]->MoveTo(BPoint(this->size,this->size));
+			this->blocks[2]->MoveTo(BPoint(this->size*2,this->size));
 			this->blocks[3]->MoveTo(BPoint(0,0));
-			center = new BPoint(BLOCK_SIZE,BLOCK_SIZE);
+			center = new BPoint(this->size,this->size);
 			break;
 		}
 		case LPOLY:
 		{
-			this->blocks[0]->MoveTo(BPoint(0,BLOCK_SIZE));
-			this->blocks[1]->MoveTo(BPoint(BLOCK_SIZE,BLOCK_SIZE));
-			this->blocks[2]->MoveTo(BPoint(BLOCK_SIZE*2,BLOCK_SIZE));
-			this->blocks[3]->MoveTo(BPoint(BLOCK_SIZE*2,0));
-			center = new BPoint(BLOCK_SIZE,BLOCK_SIZE);
+			this->blocks[0]->MoveTo(BPoint(0,this->size));
+			this->blocks[1]->MoveTo(BPoint(this->size,this->size));
+			this->blocks[2]->MoveTo(BPoint(this->size*2,this->size));
+			this->blocks[3]->MoveTo(BPoint(this->size*2,0));
+			center = new BPoint(this->size,this->size);
 			break;	
 		}
 		case SPOLY:
 		{
-			this->blocks[0]->MoveTo(BPoint(0,BLOCK_SIZE));
-			this->blocks[1]->MoveTo(BPoint(BLOCK_SIZE,BLOCK_SIZE));
-			this->blocks[2]->MoveTo(BPoint(BLOCK_SIZE,0));
-			this->blocks[3]->MoveTo(BPoint(BLOCK_SIZE*2,0));
-			center = new BPoint(BLOCK_SIZE,0);
+			this->blocks[0]->MoveTo(BPoint(0,this->size));
+			this->blocks[1]->MoveTo(BPoint(this->size,this->size));
+			this->blocks[2]->MoveTo(BPoint(this->size,0));
+			this->blocks[3]->MoveTo(BPoint(this->size*2,0));
+			center = new BPoint(this->size,0);
 			break;
 		}
 		case ZPOLY:
 		{
 			this->blocks[0]->MoveTo(BPoint(0,0));
-			this->blocks[1]->MoveTo(BPoint(BLOCK_SIZE,0));
-			this->blocks[2]->MoveTo(BPoint(BLOCK_SIZE,BLOCK_SIZE));
-			this->blocks[3]->MoveTo(BPoint(BLOCK_SIZE*2,BLOCK_SIZE));
-			center = new BPoint(BLOCK_SIZE,0);
+			this->blocks[1]->MoveTo(BPoint(this->size,0));
+			this->blocks[2]->MoveTo(BPoint(this->size,this->size));
+			this->blocks[3]->MoveTo(BPoint(this->size*2,this->size));
+			center = new BPoint(this->size,0);
 			break;
 		}
 	}
@@ -86,6 +87,7 @@ TetrisPiece::TetrisPiece(PieceType typ)
 // Copy constructor
 TetrisPiece::TetrisPiece(const TetrisPiece &pc)
 {
+	this->size = pc.size;
 	this->center = new BPoint(*pc.center);
 	this->type = pc.type;
 	for(int i = 0; i < this->NUM_BLOCKS; i++)
@@ -99,6 +101,22 @@ TetrisPiece::TetrisPiece(const TetrisPiece &pc)
 TetrisPiece::~TetrisPiece(void)
 {
 	delete this->center;
+}
+
+// resize piece while keeping the center point in the same place
+void
+TetrisPiece::ResizeTo(int newSize)
+{
+	int oldSize = this->size;
+	this->size = newSize;
+	for(int i = 0; i < this->NUM_BLOCKS; i++)
+	{
+		BPoint rightBottomOld = this->blocks[i]->Frame().RightBottom();
+		int blocksX = rightBottomOld.x / oldSize;
+		int blocksY = rightBottomOld.y / oldSize;
+		this->blocks[i]->ResizeTo(newSize,newSize);
+		this->blocks[i]->MoveTo(blocksX*newSize,blocksY*newSize);
+	}
 }
 
 void
@@ -118,6 +136,50 @@ TetrisPiece::RemoveFromParent()
 	{
 		this->blocks[i]->RemoveSelf();	
 	}	
+}
+
+
+// Height/width of piece bounding boxes
+int
+TetrisPiece::Height()
+{
+	// with respect to the screen (higher means smaller number)
+	int highest = -1;
+	int lowest = -1;
+	for(int i = 0; i < NUM_BLOCKS; i++)
+	{
+		BRect cur = this->blocks[i]->Frame();
+		if(highest == -1 || highest > cur.top)
+		{
+			highest = cur.top;
+		}
+		if(lowest == -1 || lowest < cur.bottom)
+		{
+			lowest = cur.bottom;
+		}
+	}
+	return lowest-highest;
+}
+
+int
+TetrisPiece::Width()
+{
+	// with respect to the screen (right means smaller number)
+	int rightmost = -1;
+	int leftmost = -1;
+	for(int i = 0; i < NUM_BLOCKS; i++)
+	{
+		BRect cur = this->blocks[i]->Frame();
+		if(rightmost == -1 || rightmost > cur.right)
+		{
+			rightmost = cur.right;
+		}
+		if(leftmost == -1 || leftmost < cur.left)
+		{
+			leftmost = cur.left;
+		}
+	}
+	return leftmost-rightmost;
 }
 
 void

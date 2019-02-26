@@ -45,6 +45,20 @@ void BlockView::Draw(BRect rect)
 	FillRect(Bounds());
 	// TODO: bitmap support, theming
 	// DrawBitmap(testImg);
+	
+	BRect f = Frame();
+	int sizeP1 = f.IntegerWidth()+1;
+	int inset = 0.16*sizeP1; // amount to put the bevels in by
+	BPoint topBev[4] = {BPoint(0,0), BPoint(inset,inset), 
+						BPoint(sizeP1-inset,inset), BPoint(sizeP1,0)};
+	BPoint bottomBev[4] = {BPoint(0,sizeP1), BPoint(inset,sizeP1-inset), 
+						   BPoint(sizeP1-inset,sizeP1-inset), BPoint(sizeP1,sizeP1)};
+	BPoint leftBev[4] = {BPoint(0,0), BPoint(inset,inset), 
+						 BPoint(inset,sizeP1-inset), BPoint(0,sizeP1)};
+	BPoint rightBev[4] = {BPoint(sizeP1,0), BPoint(sizeP1-inset,inset), 
+						  BPoint(sizeP1-inset,sizeP1-inset), 
+						  BPoint(sizeP1,sizeP1)};
+									   
 	// bevel edges
 	SetHighColor(255,255,255,220);
 	FillPolygon(topBev, 4);

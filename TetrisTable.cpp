@@ -18,8 +18,10 @@ tetris_clock(void *params)
 	TetrisTable *table = (TetrisTable *)params;
 	while(1) {
 		table->Tick();
-		// TODO: speed up as the game goes on
-		snooze(1000000 - table->level*5000);
+		// TODO: different speed curves using G
+		double times = pow((0.8 - ((table->level-1)*0.007)), (table->level-1));
+		//long int waitTime = adjustedG * table->G;
+		snooze((int)(times*1000000));
 	}
 	return 0;
 }
@@ -29,6 +31,10 @@ TetrisTable::TetrisTable(DashUI *ui, int rowSize, int colSize)
  :	BView(BRect(0,0,colSize*BLOCK_SIZE,rowSize*BLOCK_SIZE), 
     "tetristable", B_FOLLOW_NONE, B_WILL_DRAW)
 {	
+	// the standard rate of falling, 1 cell per 'frame'
+	// 'frames' are 60 times per second, so 0.01666
+	// in microseconds
+	this->G = 16666;
 	this->dashUi = ui;
 	this->dashUi->SetBlockDeque(&this->nextBlocks);
 	this->randomizer = new TGMRand(3, 6);
@@ -271,7 +277,7 @@ TetrisTable::FreeRows()
 		this->lines += delRows.size();
 		// every level is at 10 lines
 		// TODO: add different leveling schemes 
-		if((this->lines + 1) % 10 == 0)
+		if((this->lines + 1) % 1 == 0)
 		{
 			printf("NEXT LEVEL\n");
 			this->level++;

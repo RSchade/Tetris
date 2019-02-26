@@ -1,7 +1,7 @@
 #include "DashUI.h"
 
 DashUI::DashUI(BRect dashBox, int previews)
-	: BView(dashBox, "dashboard", B_FOLLOW_ALL, B_WILL_DRAW)
+	: BView(dashBox, "dashboard", B_FOLLOW_NONE, B_WILL_DRAW)
 {
 	this->previews = previews;
 	this->previewRefs = new TetrisPiece*[previews];
@@ -46,7 +46,7 @@ void
 DashUI::Draw(BRect rect)
 {
 	SetHighColor(0,0,0);
-	StrokeRect(Bounds());	
+	StrokeRect(Bounds());
 }
 
 void DashUI::SetScore(long int newScore)
@@ -90,9 +90,10 @@ DashUI::UpdatePreviews()
 		}
 		curRef = this->blockDeque->at(i);
 		TetrisPiece *cur = new TetrisPiece(*curRef);
+		cur->ResizeTo(12);
 		// TODO: put the previews in a better spot?
 		cur->MoveBy(0,offset);
-		offset += 55;
+		offset += cur->Height()+5;
 		cur->AddToView(*this->blockView);
 		this->previewRefs[i] = cur;
 	}

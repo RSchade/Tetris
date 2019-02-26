@@ -34,11 +34,15 @@ public:
 	void    	MoveTo(int x, int y);
 	void    	MoveBy(int dx, int dy);
 	void    	Rotate(PieceRot rot);
+	void		ResizeTo(int newSize);
 	BlockView	**GetBlocks(void);
 	BRect		*GetPos(void);
 	void		AddToView(BView &parent);
 	void		RemoveFromParent(void);
+	int			Height();
+	int			Width();
 	const int	NUM_BLOCKS = 4;
+	int			size; // size of each block
 	PieceType	type;
 private:
 	BlockView			*blocks[4];
