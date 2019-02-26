@@ -29,12 +29,15 @@ DashUI::DashUI(BRect dashBox, int previews)
 								"level", "0");
 	this->linesView = new BStringView(BRect(left, top+110, right, top+130), 
 								"lines", "0");
-	this->blockView = new BView(BRect(left, top+150, right, top+480),
+	this->blockView = new BView(BRect(left, top+150, right, top+350),
 								"preview", B_FOLLOW_ALL, B_WILL_DRAW);
+	this->storedView = new BView(BRect(left, top+360, right, top+430),
+	    						"preview", B_FOLLOW_ALL, B_WILL_DRAW);
 	AddChild(this->scoreView);
 	AddChild(this->levelView);
 	AddChild(this->linesView);
 	AddChild(this->blockView);
+	AddChild(this->storedView);
 }
 
 DashUI::~DashUI(void)
@@ -49,25 +52,47 @@ DashUI::Draw(BRect rect)
 	StrokeRect(Bounds());
 }
 
-void DashUI::SetScore(long int newScore)
+void 
+DashUI::SetScore(long int newScore)
 {
 	char scoreStr[sizeof(long int)+1];
 	sprintf(scoreStr, "%ld", newScore);
 	this->scoreView->SetText(scoreStr);
 }
 
-void DashUI::SetLines(int newLines)
+void 
+DashUI::SetLines(int newLines)
 {
 	char lineStr[sizeof(int)+1];
 	sprintf(lineStr, "%d", newLines);
 	this->linesView->SetText(lineStr);
 }
 
-void DashUI::SetLevel(int newLevel)
+void 
+DashUI::SetLevel(int newLevel)
 {
 	char levelStr[sizeof(int)+1];
 	sprintf(levelStr, "%d", newLevel);
 	this->levelView->SetText(levelStr);
+}
+
+void
+DashUI::SetStored(TetrisPiece *stored)
+{
+	if(this->stored != NULL)
+	{
+		this->stored->RemoveFromParent();
+		BlockView **blocks = this->stored->GetBlocks();
+		for(int i = 0; i < this->stored->NUM_BLOCKS; i++)
+		{
+			delete blocks[i];	
+		}
+		delete this->stored;
+	}
+	this->stored = new TetrisPiece(*stored);
+	this->stored->MoveTo(30,30);
+	this->stored->ResizeTo(12);
+	this->stored->AddToView(*this->storedView);
 }
 
 void

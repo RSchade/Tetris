@@ -26,7 +26,7 @@ public:
 	int			level;
 	int			lines;
 	long int	score;
-	int			G;
+	int			G;  // TODO: use the gravity constant for stuff (maybe set it?)
 	
 private:
 	enum CollisionType
@@ -41,8 +41,11 @@ private:
 	void						RotateActive(PieceRot rot);
 	void						NewPiece();
 	void						FreeRows();
+	void						StorePiece();
 	bool						BeyondScreen(int bx);
 	bool						TopOut(TetrisPiece *next);
+	TetrisPiece					*storage = NULL;
+	int							sinceStore = 100;
 	BPoint						GetSpawnLoc(TetrisPiece *piece);
 	CollisionType				CollidesBottomBlocks(BRect rect);
 	CollisionType				CheckCollision();

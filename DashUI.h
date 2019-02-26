@@ -16,6 +16,7 @@ public:
 	void	SetScore(long int newScore);
 	void	SetLines(int newLines);
 	void	SetLevel(int newLevel);
+	void	SetStored(TetrisPiece *stored);
 	void	UpdatePreviews(void);
 	void	SetBlockDeque(std::deque<TetrisPiece*> *newDeque);
 	void	Draw(BRect rect);
@@ -28,6 +29,8 @@ private:
 	BStringView					*levelView;
 	BStringView					*linesView;
 	BView						*blockView;
+	BView						*storedView;
+	TetrisPiece					*stored = NULL;
 };
 
 

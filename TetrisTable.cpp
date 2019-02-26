@@ -165,8 +165,14 @@ TetrisTable::Tick()
 		} 
 		//w->Lap();
 		
+		// TODO: takes 1 more tick than needed to remove the block, 
+		// feels like lag even though it isn't
+		
 		// need this, state can change after MoveActive
 		if(this->pc == NULL) {
+			// increase store counter, if this is high enough 
+			// a piece can be retrieved
+			sinceStore++;
 			// Check for rows to free at the bottom
 			FreeRows();
 			//w->Lap();
@@ -482,6 +488,32 @@ TetrisTable::RotateActive(PieceRot rot)
 	}	
 }
 
+// stores the piece, or releases it if the piece hasn't been stored yet
+void
+TetrisTable::StorePiece()
+{
+	if(sinceStore > 1)
+	{
+		// take piece out of storage
+		TetrisPiece *toReplace = this->storage;
+		// put piece into storage
+		this->storage = this->pc;
+		this->storage->RemoveFromParent();
+		// update the ui
+		this->dashUi->SetStored(this->storage);
+		this->pc = toReplace;
+		if(this->pc != NULL)
+		{
+			// TODO: kind of repeated code?
+			BPoint spawn = GetSpawnLoc(toReplace);
+			this->pc->MoveTo(spawn.x,spawn.y);
+			toReplace->AddToView(*this);
+		}
+		Tick();
+		sinceStore = 0;
+	}
+}
+
 void
 TetrisTable::KeyDown(const char *bytes, int32 numBytes)
 {
@@ -503,6 +535,9 @@ TetrisTable::KeyDown(const char *bytes, int32 numBytes)
 				break;
 			case 'x':
 				RotateActive(FORWARD);
+				break;
+			case 'c':
+				StorePiece();
 				break;
 		}	
 	}
