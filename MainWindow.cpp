@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "DashUI.h"
+#include "TableBorder.h"
 
 #include <Application.h>
 #include <Menu.h>
@@ -9,18 +10,23 @@
 #include <Message.h>
 
 MainWindow::MainWindow(void)
-	:	BWindow(BRect(100,100,600,700),"Main Window",
+	:	BWindow(BRect(100,100,505,607),"Main Window",
 			    B_TITLED_WINDOW, B_ASYNCHRONOUS_CONTROLS)
 {	
-	DashUI *ui = new DashUI(BRect(260, 0, 400, 500), 6);
+	DashUI *ui = new DashUI(BRect(265, 2, 405, 500), 6);
 	AddChild(ui);
 	
 	// per tetris spec, 40 rows, 10 columns, 20 rows, 10 columns visible
 	this->table = new TetrisTable(ui, 40, 10);
 	// move up to only have part of it visible
-	this->table->MoveTo(BPoint(0, -20*BLOCK_SIZE));
+	this->table->MoveTo(BPoint(5, -20*BLOCK_SIZE));
 	AddChild(this->table);
 	table->MakeFocus(true);
+	// make a stroke around the visible game board
+	BView *tableStroke = 
+		new TableBorder(BRect(0,0,(BLOCK_SIZE*10)+11,(BLOCK_SIZE*20)+6), 
+						NULL, B_FOLLOW_NONE, B_WILL_DRAW);
+	AddChild(tableStroke);
 	
 	// TODO: Make UI with new game, pause game, etc...
 	// TODO: High score system

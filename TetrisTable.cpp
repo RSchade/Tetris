@@ -64,8 +64,8 @@ TetrisTable::~TetrisTable(void)
 void 
 TetrisTable::Draw(BRect rect) 
 {
-	SetHighColor(0,0,0);
-	StrokeRect(Bounds());
+	//SetHighColor(0,0,0);
+	//StrokeRect(Bounds());
 }
 
 void

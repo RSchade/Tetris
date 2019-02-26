@@ -27,6 +27,7 @@ SRCS = \
 	 DashUI.cpp  \
 	 MainWindow.cpp  \
 	 RandomMethod.cpp  \
+	 TableBorder.cpp  \
 	 TetrisPiece.cpp  \
 	 TetrisTable.cpp  \
 	 TGMRand.cpp  \
