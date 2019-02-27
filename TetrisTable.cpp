@@ -57,8 +57,7 @@ TetrisTable::TetrisTable(DashUI *ui, int rowSize, int colSize)
 	time_thread = spawn_thread(tetris_clock, "tetrisclock", 
 							   B_REAL_TIME_PRIORITY, this);
 	if(time_thread == B_NO_MORE_THREADS) {
-		printf("Error making clock thread\n");
-		// TODO: exit	
+		throw "no more threads";
 	}
 	NewPiece();
 }
@@ -165,9 +164,6 @@ TetrisTable::Tick()
 		} 
 		//w->Lap();
 		
-		// TODO: takes 1 more tick than needed to remove the block, 
-		// feels like lag even though it isn't
-		
 		// need this, state can change after MoveActive
 		if(this->pc == NULL) {
 			// increase store counter, if this is high enough 
@@ -237,7 +233,6 @@ void
 TetrisTable::FreeRows()
 {
 	printf("FREE CHECK\n");
-	// TODO: still something wrong with this... keep monitoring it
 	// keep track of which rows we are deleting
 	std::vector<int> delRows(0);
 	bool full = true;
@@ -353,7 +348,7 @@ TetrisTable::MoveActive(int bx, int by)
 		} 
 		if((col & STICK) == STICK)
 		{
-			// means we are gliding, don't let it move down at all
+			// means we are on top of another piece, can't move down
 			by = 0;	
 		}
 		// check if this piece is moving beyond the screen, 
@@ -390,6 +385,7 @@ TetrisTable::CollisionType
 TetrisTable::CheckCollision()
 {	
 	int ret = 0;
+	bool resetShiftTime = true;
 	if(this->pc != NULL)
 	{
 		BRect *rects = this->pc->GetPos();
@@ -399,7 +395,7 @@ TetrisTable::CheckCollision()
 			int curCollide = CollidesBottomBlocks(curRect);
 			// make the block stop if it hits the blocks at the bottom
 			// or if it hits the bottom of the game board
-			if(curRect.bottom > Bounds().Height()-BLOCK_SIZE 
+			if(curRect.bottom >= Bounds().Height()-BLOCK_SIZE 
 			   || (curCollide & STICK) == STICK)
 			{
 				ret |= STICK;
@@ -408,32 +404,43 @@ TetrisTable::CheckCollision()
 				// set the shiftTime to start now
 				if(shiftTime == -1)
 				{
-					shiftTime = real_time_clock_usecs();	
+					resetShiftTime = false;
+					shiftTime = real_time_clock_usecs();
+					// move last bit of the way to the piece
+					this->pc->MoveBy(0,BLOCK_SIZE);
 				}
-				
-				// TODO: shift time should be adjustable and only happen
-				// if the block is moved as it hits the ground
-				if(real_time_clock_usecs() - shiftTime >= 100000)
+				if((curCollide & BELOW) == BELOW || 
+					curRect.bottom >= Bounds().Height())
 				{
-					// make this become apart of the blocks at the
-					// bottom of the screen
-					BlockView **newBlocks = this->pc->GetBlocks();
-					for(int j = 0; j < this->pc->NUM_BLOCKS; j++)
-					{
-						BRect curFrame = newBlocks[j]->Frame();
-						int row = (int)(curFrame.top/BLOCK_SIZE);
-						int col = (int)(curFrame.left/BLOCK_SIZE);
-						// add to matrix
-						this->bottomMatrix[row][col] = newBlocks[j];
-					}
-					delete this->pc;
-					this->pc = NULL;
-					shiftTime = -1;
-					return STICK;
+					resetShiftTime = false;
 				}
 			}
 			// combine all of the collisions together (OR bit vectors)
 			ret |= curCollide;
+		}
+		if(resetShiftTime)
+		{
+			shiftTime = -1;
+		}
+		// if we have been 'shifting' along a surface and the timer
+		// ended successfully, stop the block here
+		if(shiftTime != -1 && real_time_clock_usecs() - shiftTime >= 300000)
+		{
+			// make this become apart of the blocks at the
+			// bottom of the screen
+			BlockView **newBlocks = this->pc->GetBlocks();
+			for(int j = 0; j < this->pc->NUM_BLOCKS; j++)
+			{
+				BRect curFrame = newBlocks[j]->Frame();
+				int row = (int)(curFrame.top/BLOCK_SIZE);
+				int col = (int)(curFrame.left/BLOCK_SIZE);
+				// add to matrix
+				this->bottomMatrix[row][col] = newBlocks[j];
+			}
+			delete this->pc;
+			this->pc = NULL;
+			shiftTime = -1;
+			return STICK;
 		}
 	}
 	return (CollisionType)ret;
@@ -445,8 +452,14 @@ TetrisTable::CollidesBottomBlocks(BRect rect)
 	int row = (int)(rect.top/BLOCK_SIZE);
 	int col = (int)(rect.left/BLOCK_SIZE);
 	int ret = 0;	
-	// bottom (STICK)
+	// block exists below
 	if(row+1 < rowSize && this->bottomMatrix[row+1][col] != NULL)
+	{
+		ret |= BELOW;
+		ret |= STICK;
+	}
+	// bottom (1 or 2 blocks) (STICK)
+	if(row+2 < rowSize && this->bottomMatrix[row+2][col] != NULL)
 	{
 		ret |= STICK;
 	}

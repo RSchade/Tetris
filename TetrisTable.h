@@ -33,6 +33,7 @@ private:
 	{
 		NONE = 0,
 		STICK = 8,
+		BELOW = 4,
 		COLLIDEL = 1,
 		COLLIDER = 2,
 		COLLIDE = 3
