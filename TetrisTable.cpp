@@ -232,7 +232,6 @@ TetrisTable::TopOut(TetrisPiece *next)
 void
 TetrisTable::FreeRows()
 {
-	printf("FREE CHECK\n");
 	// keep track of which rows we are deleting
 	std::vector<int> delRows(0);
 	bool full = true;
@@ -323,41 +322,48 @@ TetrisTable::FreeRows()
 void
 TetrisTable::MoveActive(int bx, int by)
 {
-	CollisionType col = CheckCollision();
-	if(this->pc != NULL) 
+	if(this->moveLock.Lock())
 	{
-		if((col & COLLIDEL) == COLLIDEL)
+		CollisionType col = CheckCollision(bx);
+		if(this->pc != NULL) 
 		{
-			if(bx < 0)
+			if((col & COLLIDEL) == COLLIDEL)
+			{
+				printf("L %d\n", bx);
+				if(bx < 0)
+				{
+					bx = 0;
+				}
+			} 
+			if((col & COLLIDER) == COLLIDER)
+			{
+				printf("R %d\n", bx);
+				if(bx > 0)
+				{
+					bx = 0;
+				}	
+			} 
+			if((col & COLLIDE) == COLLIDE)
+			{
+				printf("B\n");
+				// collided on both sides, don't allow it to move 
+				// horizontally at all
+				bx = 0;
+			} 
+			if((col & STICK) == STICK)
+			{
+				// means we are on top of another piece, can't move down
+				by = 0;
+			}
+			// check if this piece is moving beyond the screen, 
+			// if so can't move sideways
+			if(BeyondScreen(bx))
 			{
 				bx = 0;
 			}
-		} 
-		if((col & COLLIDER) == COLLIDER)
-		{
-			if(bx > 0)
-			{
-				bx = 0;
-			}	
-		} 
-		if((col & COLLIDE) == COLLIDE)
-		{
-			// collided on both sides, don't allow it to move 
-			// horizontally at all
-			bx = 0;
-		} 
-		if((col & STICK) == STICK)
-		{
-			// means we are on top of another piece, can't move down
-			by = 0;	
+			this->pc->MoveBy(bx,by);
 		}
-		// check if this piece is moving beyond the screen, 
-		// if so can't move sideways
-		if(BeyondScreen(bx))
-		{
-			bx = 0;
-		}
-		this->pc->MoveBy(bx,by);
+		this->moveLock.Unlock();
 	}
 }
 
@@ -382,7 +388,7 @@ TetrisTable::BeyondScreen(int bx)
 // Collides with the bottom/floor if the current block touches it
 // makes the current block become apart of the floor
 TetrisTable::CollisionType
-TetrisTable::CheckCollision()
+TetrisTable::CheckCollision(int bx)
 {	
 	int ret = 0;
 	bool resetShiftTime = true;
@@ -399,16 +405,6 @@ TetrisTable::CheckCollision()
 			   || (curCollide & STICK) == STICK)
 			{
 				ret |= STICK;
-				// before something sticks, allow it to move a little bit
-				// but still have it collide
-				// set the shiftTime to start now
-				if(shiftTime == -1)
-				{
-					resetShiftTime = false;
-					shiftTime = real_time_clock_usecs();
-					// move last bit of the way to the piece
-					this->pc->MoveBy(0,BLOCK_SIZE);
-				}
 				if((curCollide & BELOW) == BELOW || 
 					curRect.bottom >= Bounds().Height())
 				{
@@ -418,14 +414,39 @@ TetrisTable::CheckCollision()
 			// combine all of the collisions together (OR bit vectors)
 			ret |= curCollide;
 		}
+		// before something sticks, allow it to move a little bit
+		// but still have it collide
+		// set the shiftTime to start now
+		if((ret & STICK) == STICK && shiftTime == -1)
+		{
+			printf("START TIMER\n");
+			resetShiftTime = false;
+			shiftTime = real_time_clock_usecs();
+			printf("BELOW: %d\n", ret & BELOW);
+			// don't move down if there's something below or
+			// if it will cause a left or right collision
+			bool moveRight = bx > 0;
+			bool moveLeft = bx < 0;
+			printf("MR %d ML %d\n", moveRight, moveLeft);
+			if((ret & BELOW) == 0 &&
+			   (!BELOWL || !moveLeft) &&
+			   (!BELOWR || !moveRight))
+			{
+				printf("MOVE DOWN\n");
+				// move last bit of the way to the piece
+				this->pc->MoveBy(0,BLOCK_SIZE);
+			}
+		}
 		if(resetShiftTime)
 		{
+			printf("RESET SHIFT TIMER\n");
 			shiftTime = -1;
 		}
 		// if we have been 'shifting' along a surface and the timer
 		// ended successfully, stop the block here
 		if(shiftTime != -1 && real_time_clock_usecs() - shiftTime >= 300000)
 		{
+			printf("END TIMER\n");
 			// make this become apart of the blocks at the
 			// bottom of the screen
 			BlockView **newBlocks = this->pc->GetBlocks();
@@ -453,10 +474,23 @@ TetrisTable::CollidesBottomBlocks(BRect rect)
 	int col = (int)(rect.left/BLOCK_SIZE);
 	int ret = 0;	
 	// block exists below
-	if(row+1 < rowSize && this->bottomMatrix[row+1][col] != NULL)
+	if(row+1 < rowSize)
 	{
-		ret |= BELOW;
-		ret |= STICK;
+		if(this->bottomMatrix[row+1][col] != NULL)
+		{
+			printf("BELOW\n");
+			ret |= BELOW;
+			ret |= STICK;
+		}
+		// if a block exists diagonally below
+		if(col+1 < colSize && this->bottomMatrix[row+1][col+1] != NULL) 
+		{
+			ret |= BELOWR;
+		}
+		if(col-1 >= 0 && this->bottomMatrix[row+1][col-1] != NULL)
+		{
+			ret |= BELOWL;
+		}
 	}
 	// bottom (1 or 2 blocks) (STICK)
 	if(row+2 < rowSize && this->bottomMatrix[row+2][col] != NULL)
@@ -479,6 +513,7 @@ TetrisTable::CollidesBottomBlocks(BRect rect)
 void
 TetrisTable::RotateActive(PieceRot rot)
 {
+	// TODO: T-Spin
 	if(this->pc != NULL)
 	{
 		this->pc->Rotate(rot);
@@ -528,6 +563,15 @@ TetrisTable::StorePiece()
 }
 
 void
+TetrisTable::HardDrop()
+{
+	while(this->pc != NULL)
+	{
+		MoveActive(0,BLOCK_SIZE);
+	}
+}
+
+void
 TetrisTable::KeyDown(const char *bytes, int32 numBytes)
 {
 	if(numBytes == 1)
@@ -535,12 +579,15 @@ TetrisTable::KeyDown(const char *bytes, int32 numBytes)
 		switch(bytes[0])
 		{
 			case B_DOWN_ARROW:
+				printf("DOWN\n");
 				MoveActive(0,BLOCK_SIZE);
 				break;
 			case B_LEFT_ARROW:
+				printf("LEFT\n");
 				MoveActive(-BLOCK_SIZE,0);
 				break;
 			case B_RIGHT_ARROW:
+				printf("RIGHT\n");
 				MoveActive(BLOCK_SIZE,0);
 				break;
 			case 'z':
@@ -551,6 +598,9 @@ TetrisTable::KeyDown(const char *bytes, int32 numBytes)
 				break;
 			case 'c':
 				StorePiece();
+				break;
+			case B_SPACE:
+				HardDrop();
 				break;
 		}	
 	}

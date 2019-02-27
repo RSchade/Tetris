@@ -11,7 +11,7 @@
 #include <Point.h>
 #include <Control.h>
 #include <InterfaceDefs.h>
-#include <StringView.h>
+#include <Locker.h>
 #include <deque>
 
 class TetrisTable : public BView {
@@ -32,6 +32,8 @@ private:
 	enum CollisionType
 	{
 		NONE = 0,
+		BELOWL = 16,
+		BELOWR = 32,
 		STICK = 8,
 		BELOW = 4,
 		COLLIDEL = 1,
@@ -43,13 +45,15 @@ private:
 	void						NewPiece();
 	void						FreeRows();
 	void						StorePiece();
+	void						HardDrop();
 	bool						BeyondScreen(int bx);
 	bool						TopOut(TetrisPiece *next);
 	TetrisPiece					*storage = NULL;
 	int							sinceStore = 100;
+	BLocker						moveLock;
 	BPoint						GetSpawnLoc(TetrisPiece *piece);
 	CollisionType				CollidesBottomBlocks(BRect rect);
-	CollisionType				CheckCollision();
+	CollisionType				CheckCollision(int bx);
 	RandomMethod				*randomizer;
 	BView						*block;
 	thread_id					time_thread;
