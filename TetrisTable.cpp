@@ -429,6 +429,10 @@ TetrisTable::GetShadow()
 			}
 			shadow->MoveBy(0,BLOCK_SIZE);
 		}
+		if(lowest > Bounds().Height()-BLOCK_SIZE)
+		{
+			shadow->MoveBy(0,-BLOCK_SIZE);
+		}
 		return shadow;
 	}
 	return NULL;
