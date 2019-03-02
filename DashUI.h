@@ -2,6 +2,7 @@
 #define DASHUI_H
 
 #include "TetrisPiece.h"
+#include "BoxView.h"
 
 #include <SupportDefs.h>
 #include <Rect.h>

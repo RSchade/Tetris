@@ -3,41 +3,68 @@
 DashUI::DashUI(BRect dashBox, int previews)
 	: BView(dashBox, "dashboard", B_FOLLOW_NONE, B_WILL_DRAW)
 {
+	AdoptSystemColors();
 	this->previews = previews;
 	this->previewRefs = new TetrisPiece*[previews];
 	for(int i = 0; i < previews; i++)
 	{
 		this->previewRefs[i] = NULL;
 	}
-	float inset = 20;
+	float inset = 5;
 	BRect bound = Bounds();
 	float right = bound.right-inset;
 	float left = bound.left+inset;
 	float top = bound.top;
-	BStringView *label = new BStringView(BRect(left, top+10, right, top+30),
-								NULL, "Score:");
-	AddChild(label);
-	label = new BStringView(BRect(left, top+50, right, top+70),
-							NULL, "Level:");
-	AddChild(label);
-	label = new BStringView(BRect(left, top+90, right, top+110),
-							NULL, "Lines:");
-	AddChild(label);
-	this->scoreView = new BStringView(BRect(left, top+30, right, top+50), 
-								"score", "0");
-	this->levelView = new BStringView(BRect(left, top+70, right, top+90), 
-								"level", "0");
-	this->linesView = new BStringView(BRect(left, top+110, right, top+130), 
-								"lines", "0");
-	this->blockView = new BView(BRect(left, top+150, right, top+350),
+	BFont *sideFont = new BFont();
+	sideFont->SetSize(15);
+	// initialize all of the side boxes, keep the string views in an array
+	// the boxes will remain for the entire program untouched so we don't
+	// need their references
+	BStringView **sideViews = new BStringView*[3];
+	const char **names = new const char*[3];
+	names[0] = "Score";
+	names[1] = "Level";
+	names[2] = "Lines";
+	int height = 60;
+	int nextTop = 0; // where to put the top of the new element
+	for(int i = 0; i < 3; i++)
+	{
+		BoxView *b = new BoxView(BRect(left,top+5+(i*height),
+									   right,top+55+(i*height)), 
+	         					 NULL, B_FOLLOW_ALL, B_WILL_DRAW);
+	    nextTop = top+55+(i*height);
+		b->SetTitle(BString(names[i]));
+		b->font->SetSize(15);
+		AddChild(b);
+		sideViews[i] = new BStringView(BRect(5,15,120,40), NULL, "0");
+		sideViews[i]->SetFont(sideFont);
+		b->AddChild(sideViews[i]);
+	}
+	this->scoreView = sideViews[0];
+	this->levelView = sideViews[1];
+	this->linesView = sideViews[2];
+	delete sideViews;
+	delete names;
+	
+	nextTop += 20;
+	BoxView *b = new BoxView(BRect(left,nextTop,80,nextTop+220), 
+	         				 NULL, B_FOLLOW_ALL, B_WILL_DRAW);
+	this->blockView = new BView(BRect(5, 20, 65, 215),
 								"preview", B_FOLLOW_ALL, B_WILL_DRAW);
-	this->storedView = new BView(BRect(left, top+360, right, top+430),
+	this->blockView->AdoptSystemColors();
+	b->SetTitle(BString("Next"));
+	b->font->SetSize(15);
+	AddChild(b);
+	b->AddChild(this->blockView);
+	b = new BoxView(BRect(85,nextTop,right,nextTop+65), 
+	                NULL, B_FOLLOW_ALL, B_WILL_DRAW);
+	this->storedView = new BView(BRect(10,25,50,55),
 	    						"preview", B_FOLLOW_ALL, B_WILL_DRAW);
-	AddChild(this->scoreView);
-	AddChild(this->levelView);
-	AddChild(this->linesView);
-	AddChild(this->blockView);
-	AddChild(this->storedView);
+	this->storedView->AdoptSystemColors();
+	b->SetTitle(BString("Stored"));
+	b->font->SetSize(15);
+	AddChild(b);
+	b->AddChild(this->storedView);
 }
 
 DashUI::~DashUI(void)
@@ -89,8 +116,8 @@ DashUI::SetStored(TetrisPiece *stored)
 		}
 		delete this->stored;
 	}
-	this->stored = new TetrisPiece(*stored);
-	this->stored->MoveTo(30,30);
+	this->stored = new TetrisPiece(stored->type);
+	this->stored->MoveTo(0,0);
 	this->stored->ResizeTo(12);
 	this->stored->AddToView(*this->storedView);
 }

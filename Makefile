@@ -24,6 +24,7 @@ SRCS = \
 	 7Bag.cpp  \
 	 App.cpp  \
 	 BlockView.cpp  \
+	 BoxView.cpp  \
 	 DashUI.cpp  \
 	 MainWindow.cpp  \
 	 RandomMethod.cpp  \
@@ -46,6 +47,8 @@ RSRCS = \
 
 # End Pe/Eddie support.
 # @<-src@ 
+#%}
+
 #%}
 
 #%}
