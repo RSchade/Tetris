@@ -7,14 +7,15 @@ TetrisPiece::TetrisPiece(PieceType typ)
 {
 	this->type = typ;
 	this->size = 25;
+	// TODO: abide by tetris color standards, custom colors too
 	// random color for each piece
-	int *color = colors[rand()%NUM_COLORS];
 	for(int i = 0; i < NUM_BLOCKS; i++)
 	{
 		this->blocks[i] = new BlockView();
-		this->blocks[i]->SetColor(color);
 		this->blocks[i]->ResizeTo(this->size,this->size);	
 	}
+	int *color = colors[rand()%NUM_COLORS];
+	SetColor(color);
 	// always spawn with the flat side down
 	switch(typ)
 	{
@@ -93,6 +94,15 @@ TetrisPiece::TetrisPiece(const TetrisPiece &pc)
 	for(int i = 0; i < this->NUM_BLOCKS; i++)
 	{
 		this->blocks[i] = new BlockView(*pc.blocks[i]);	
+	}
+}
+
+void
+TetrisPiece::SetColor(int *color)
+{
+	for(int i = 0; i < NUM_BLOCKS; i++)
+	{
+		this->blocks[i]->SetColor(color);
 	}
 }
 

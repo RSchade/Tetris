@@ -35,6 +35,7 @@ public:
 	void    	MoveBy(int dx, int dy);
 	void    	Rotate(PieceRot rot);
 	void		ResizeTo(int newSize);
+	void		SetColor(int *color);
 	BlockView	**GetBlocks(void);
 	BRect		*GetPos(void);
 	void		AddToView(BView &parent);

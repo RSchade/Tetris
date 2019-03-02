@@ -48,6 +48,9 @@ private:
 	void						HardDrop();
 	bool						BeyondScreen(int bx);
 	bool						TopOut(TetrisPiece *next);
+	void						UpdateShadow();
+	TetrisPiece					*GetShadow();
+	TetrisPiece					*shadow = NULL;
 	TetrisPiece					*storage = NULL;
 	int							sinceStore = 100;
 	BLocker						moveLock;
@@ -63,6 +66,7 @@ private:
 	std::deque<TetrisPiece*>	nextBlocks;
 	bigtime_t					shiftTime;
 	int 						scoreLevels[5] = {0, 40, 100, 300, 1200};
+	int							gray[3] = {128,128,128};
 	int							rowSize;
 	int							colSize;
 };

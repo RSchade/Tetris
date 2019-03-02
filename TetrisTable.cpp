@@ -156,13 +156,11 @@ TetrisTable::Tick()
 {
 	if(Window() != NULL && Window()->LockLooper()) 
 	{
-		//BStopWatch *w = new BStopWatch("ticktime");
 		if(this->pc != NULL)
 		{
 			// Lower the active piece
 			MoveActive(0,BLOCK_SIZE);
 		} 
-		//w->Lap();
 		
 		// need this, state can change after MoveActive
 		if(this->pc == NULL) {
@@ -171,7 +169,6 @@ TetrisTable::Tick()
 			sinceStore++;
 			// Check for rows to free at the bottom
 			FreeRows();
-			//w->Lap();
 			// Check for lose state
 			if(TopOut(this->nextBlocks.front()))
 			{
@@ -181,11 +178,10 @@ TetrisTable::Tick()
 			{
 				// Create a new piece at the top
 				NewPiece();
-				//w->Lap();
 			}
 		}
-		//w->Lap();
-		//delete w;
+		
+		UpdateShadow();
 		
 		Window()->UnlockLooper();
 	}
@@ -367,6 +363,27 @@ TetrisTable::MoveActive(int bx, int by)
 	}
 }
 
+void
+TetrisTable::UpdateShadow()
+{
+	// create the shadow
+	if(this->shadow != NULL)
+	{
+		this->shadow->RemoveFromParent();
+		BlockView **blocks = this->shadow->GetBlocks();
+		for(int i = 0; i < this->shadow->NUM_BLOCKS; i++)
+		{
+			delete blocks[i];
+		}
+		delete this->shadow;
+	}
+	this->shadow = GetShadow();
+	if(this->shadow != NULL)
+	{
+		this->shadow->AddToView(*this);
+	}
+}
+
 bool
 TetrisTable::BeyondScreen(int bx)
 {
@@ -383,6 +400,38 @@ TetrisTable::BeyondScreen(int bx)
 		}
 	}
 	return false;
+}
+
+// Gets the shadow piece for the current active piece, colored clear
+TetrisPiece *
+TetrisTable::GetShadow()
+{
+	if(this->pc != NULL)
+	{
+		int lowest = -1;
+		TetrisPiece *shadow = new TetrisPiece(*this->pc);
+		shadow->SetColor(gray);
+		while(lowest == -1 || lowest < Bounds().Height()-BLOCK_SIZE)
+		{
+			BRect *rects = shadow->GetPos();
+			for(int i = 0; i < shadow->NUM_BLOCKS; i++)
+			{
+				BRect curRect = rects[i];
+				int curCollide = CollidesBottomBlocks(curRect);
+				if(lowest == -1 || curRect.bottom > lowest)
+				{
+					lowest = (int)curRect.bottom;
+				}
+				if((curCollide & BELOW) == BELOW)
+				{
+					return shadow;	
+				}
+			}
+			shadow->MoveBy(0,BLOCK_SIZE);
+		}
+		return shadow;
+	}
+	return NULL;
 }
 
 // Collides with the bottom/floor if the current block touches it
@@ -442,7 +491,7 @@ TetrisTable::CheckCollision(int bx)
 			printf("RESET SHIFT TIMER\n");
 			shiftTime = -1;
 		}
-		// if we have been 'shifting' along a surface and the timer
+		// if we have been 'shifting' along a surface and the timers
 		// ended successfully, stop the block here
 		if(shiftTime != -1 && real_time_clock_usecs() - shiftTime >= 300000)
 		{
@@ -604,4 +653,6 @@ TetrisTable::KeyDown(const char *bytes, int32 numBytes)
 				break;
 		}	
 	}
+	
+	UpdateShadow();
 }
