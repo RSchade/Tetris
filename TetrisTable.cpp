@@ -10,8 +10,6 @@
 #include <Directory.h>
 #include <Message.h>
 
-#include <StopWatch.h>
-
 int32
 tetris_clock(void *params)
 {
@@ -618,9 +616,27 @@ TetrisTable::StorePiece()
 void
 TetrisTable::HardDrop()
 {
-	while(this->pc != NULL)
+	if(this->pc != NULL)
 	{
-		MoveActive(0,BLOCK_SIZE);
+		// add the shadow's pieces to the background
+		TetrisPiece *shadow = GetShadow();
+		shadow->SetColor(this->pc->color);
+		shadow->AddToView(*this);
+		this->pc->RemoveFromParent();
+		BlockView **blocks = this->pc->GetBlocks();
+		BlockView **newBlocks = shadow->GetBlocks();
+		for(int i = 0; i < this->pc->NUM_BLOCKS; i++)
+		{
+			delete blocks[i];
+			BlockView *block = newBlocks[i];
+			BRect f = block->Frame();
+			int col = f.LeftTop().x / BLOCK_SIZE;
+			int row = f.LeftTop().y / BLOCK_SIZE;
+			this->bottomMatrix[row][col] = block;
+		}
+		delete this->pc;
+		delete shadow;
+		this->pc = NULL;
 	}
 }
 

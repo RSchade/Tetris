@@ -14,7 +14,7 @@ TetrisPiece::TetrisPiece(PieceType typ)
 		this->blocks[i] = new BlockView();
 		this->blocks[i]->ResizeTo(this->size,this->size);	
 	}
-	int *color = colors[rand()%NUM_COLORS];
+	this->color = colors[rand()%NUM_COLORS];
 	SetColor(color);
 	// always spawn with the flat side down
 	switch(typ)

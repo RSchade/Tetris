@@ -45,6 +45,7 @@ public:
 	const int	NUM_BLOCKS = 4;
 	int			size; // size of each block
 	PieceType	type;
+	int			*color;
 private:
 	BlockView			*blocks[4];
 	BPoint				*center;
